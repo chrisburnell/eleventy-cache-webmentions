@@ -79,18 +79,22 @@ module.exports = (config, options = {}) => {
 		if (!asset.isCacheValid(options.duration)) {
 			const since = asset._cache.getKey(options.key) ? asset._cache.getKey(options.key).cachedAt : false
 			const url = `https://webmention.io/api/mentions.jf2?domain=${hostname(options.domain)}&token=${TOKEN}&per-page=9001${since ? `&since=${since}` : ``}`
-			const response = await fetch(url)
-			if (response.ok) {
-				const feed = await response.json()
-				if (feed.children.length) {
-					console.log(`[${hostname(options.domain)}] ${feed.children.length} new Webmentions fetched into cache.`)
-				}
-				webmentions.children = [...feed.children, ...webmentions.children].sort((a, b) => {
-					return epoch(b.published || b["wm-received"]) - epoch(a.published || a["wm-received"])
+			await fetch(url)
+				.then(async (response) => {
+					if (response.ok) {
+						const feed = await response.json()
+						if (feed.children.length) {
+							console.log(`[${hostname(options.domain)}] ${feed.children.length} new Webmentions fetched into cache.`)
+						}
+						webmentions.children = [...feed.children, ...webmentions.children]
+						await asset.save(webmentions, "json")
+						return webmentions
+					}
+					return Promise.reject(response)
 				})
-				await asset.save(webmentions, "json")
-				return webmentions
-			}
+				.catch((error) => {
+					console.log("Something went wrong with your request to webmention.io!", error)
+				})
 		}
 
 		return webmentions
@@ -131,7 +135,7 @@ module.exports = (config, options = {}) => {
 		}
 
 		const results = webmentions[url]
-			// filter webmentions by allowedTypes only if passed
+			// filter webmentions by allowed response post types
 			.filter((entry) => {
 				return Array.isArray(allowedTypes) ? allowedTypes.includes(entry["wm-property"]) : true
 			})
@@ -178,6 +182,6 @@ module.exports = (config, options = {}) => {
 		config.addLiquidFilter("getWebmentions", getWebmentionsFilter)
 		config.addNunjucksAsyncFilter("getWebmentions", getWebmentionsFilter)
 	} else {
-		return filteredWebmentions()
+		return filteredWebmentions
 	}
 }
