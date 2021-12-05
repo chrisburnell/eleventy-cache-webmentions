@@ -54,6 +54,7 @@ module.exports = (config, options = {}) => {
 			},
 			urlReplacements: {},
 			maximumHtmlLength: 2000,
+			maximumHtmlText: "mentioned this in",
 		},
 		options
 	)
@@ -146,7 +147,7 @@ module.exports = (config, options = {}) => {
 				}
 				const { html, text } = entry.content
 				if (html && html.length > options.maximumHtmlLength) {
-					entry.content.value = `mentioned this in <a href="${entry["wm-source"]}">${entry["wm-source"]}</a>`
+					entry.content.value = `${options.maximumHtmlText} <a href="${entry["wm-source"]}">${entry["wm-source"]}</a>`
 				} else {
 					entry.content.value = sanitizeHTML(html || text, options.allowedHTML)
 				}
