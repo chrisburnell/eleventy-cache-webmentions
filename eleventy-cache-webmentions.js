@@ -52,7 +52,7 @@ module.exports = (config, options = {}) => {
 					a: ["href"],
 				},
 			},
-			urlReplacements: [],
+			urlReplacements: {},
 			maximumHtmlLength: 2000,
 		},
 		options
