@@ -174,6 +174,7 @@ module.exports = (config, options = {}) => {
 			throw new Error("domain is a required option to be passed when adding the plugin to your config using addPlugin.")
 		}
 
+		config.addLiquidFilter("getWebmentions", getWebmentionsFilter)
 		config.addNunjucksAsyncFilter("getWebmentions", getWebmentionsFilter)
 	} else {
 		return filteredWebmentions()
