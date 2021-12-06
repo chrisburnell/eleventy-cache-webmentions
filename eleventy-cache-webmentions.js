@@ -93,7 +93,7 @@ module.exports = (config, options = {}) => {
 					return Promise.reject(response)
 				})
 				.catch((error) => {
-					console.log("Something went wrong with your request to webmention.io!", error)
+					console.log("[${hostname(options.domain)}] Something went wrong with your request to webmention.io!", error)
 				})
 		}
 
@@ -126,7 +126,7 @@ module.exports = (config, options = {}) => {
 		return webmentions
 	}
 
-	const getWebmentions = async (url, allowedTypes) => {
+	const getWebmentions = async (url, allowedTypes = {}) => {
 		const webmentions = await filteredWebmentions()
 		url = absoluteURL(url, options.domain)
 
@@ -137,7 +137,7 @@ module.exports = (config, options = {}) => {
 		const results = webmentions[url]
 			// filter webmentions by allowed response post types
 			.filter((entry) => {
-				return Array.isArray(allowedTypes) ? allowedTypes.includes(entry["wm-property"]) : true
+				return typeof allowedTypes === "object" && Object.keys(allowedTypes).length ? allowedTypes.includes(entry["wm-property"]) : true
 			})
 			// remove webmentions without an author name
 			.filter((entry) => {
@@ -166,12 +166,12 @@ module.exports = (config, options = {}) => {
 	}
 
 	const getWebmentionsFilter = async (url, allowedTypes, callback) => {
-		const webmentions = await getWebmentions(url, allowedTypes)
-		if (typeof callback === "function") {
-			callback(null, webmentions)
-		} else {
-			return webmentions
+		if (typeof callback !== "function") {
+			callback = allowedTypes
+			allowedTypes = {}
 		}
+		const webmentions = await getWebmentions(url, allowedTypes)
+		callback(null, webmentions)
 	}
 
 	if (config && options) {
