@@ -1,16 +1,16 @@
 {
   "name": "@chrisburnell/eleventy-cache-webmentions",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Cache webmentions from webmention.io using eleventy-cache-assets.",
   "main": "eleventy-cache-webmentions.js",
   "author": "Chris Burnell <me@chrisburnell.com>",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git@github.com:chrisburnell/chrisburnell.com.git"
+    "url": "git@github.com:chrisburnell/eleventy-cache-webmentions.git"
   },
   "bugs": {
-    "url": "https://github.com/chrisburnell/chrisburnell.com/issues"
+    "url": "https://github.com/chrisburnell/eleventy-cache-webmentions/issues"
   },
   "engines": {
     "node": ">=10"
