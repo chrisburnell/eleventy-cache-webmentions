@@ -41,7 +41,7 @@ const epoch = (value) => {
 	return new Date(value).getTime()
 }
 
-module.exports = (, options = {}) => {
+module.exports = (eleventyConfig, options = {}) => {
 	options = Object.assign(
 		{
 			duration: "23h",
