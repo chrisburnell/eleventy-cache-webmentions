@@ -152,8 +152,10 @@ module.exports = (, options = {}) => {
 				const { html, text } = entry.content
 				if (html && html.length > options.maximumHtmlLength) {
 					entry.content.value = `${options.maximumHtmlText} <a href="${entry["wm-source"]}">${entry["wm-source"]}</a>`
-				} else {
+				} else if (Object.keys(options.allowedHTML).length) {
 					entry.content.value = sanitizeHTML(html || text, options.allowedHTML)
+				} else {
+					entry.content.value = html || text
 				}
 				return entry
 			})
