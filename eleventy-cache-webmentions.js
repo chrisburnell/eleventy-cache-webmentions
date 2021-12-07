@@ -41,7 +41,7 @@ const epoch = (value) => {
 	return new Date(value).getTime()
 }
 
-module.exports = (config, options = {}) => {
+module.exports = (, options = {}) => {
 	options = Object.assign(
 		{
 			duration: "23h",
@@ -174,13 +174,13 @@ module.exports = (config, options = {}) => {
 		callback(null, webmentions)
 	}
 
-	if (config && options) {
+	if (eleventyConfig && options) {
 		if (!options.domain) {
-			throw new Error("domain is a required option to be passed when adding the plugin to your config using addPlugin.")
+			throw new Error("domain is a required option to be passed when adding the plugin to your eleventyConfig using addPlugin.")
 		}
 
-		config.addLiquidFilter("getWebmentions", getWebmentionsFilter)
-		config.addNunjucksAsyncFilter("getWebmentions", getWebmentionsFilter)
+		eleventyConfig.addLiquidFilter("getWebmentions", getWebmentionsFilter)
+		eleventyConfig.addNunjucksAsyncFilter("getWebmentions", getWebmentionsFilter)
 	} else {
 		return filteredWebmentions
 	}
