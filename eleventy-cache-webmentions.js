@@ -3,8 +3,6 @@ const sanitizeHTML = require("sanitize-html")
 const uniqBy = require("lodash/uniqBy")
 const { AssetCache } = require("@11ty/eleventy-cache-assets")
 
-// Load .env variables with dotenv
-require("dotenv").config()
 const TOKEN = process.env.WEBMENTION_IO_TOKEN
 
 const absoluteURL = (url, domain) => {
@@ -181,9 +179,14 @@ module.exports = (eleventyConfig, options = {}) => {
 			throw new Error("domain is a required option to be passed when adding the plugin to your eleventyConfig using addPlugin.")
 		}
 
+		// Liquid/Nunjucks Filters
 		eleventyConfig.addLiquidFilter("getWebmentions", getWebmentionsFilter)
 		eleventyConfig.addNunjucksAsyncFilter("getWebmentions", getWebmentionsFilter)
+
+		// Eleventy Data
+		eleventyConfig.addGlobalData("webmentions", filteredWebmentions)
 	} else {
+		// JavaScript
 		return filteredWebmentions
 	}
 }
