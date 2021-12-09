@@ -3,6 +3,9 @@ const sanitizeHTML = require("sanitize-html")
 const uniqBy = require("lodash/uniqBy")
 const { AssetCache } = require("@11ty/eleventy-cache-assets")
 
+// Load .env variables with dotenv
+require("dotenv").config()
+
 const TOKEN = process.env.WEBMENTION_IO_TOKEN
 
 const absoluteURL = (url, domain) => {
@@ -91,7 +94,7 @@ module.exports = (eleventyConfig, options = {}) => {
 					return Promise.reject(response)
 				})
 				.catch((error) => {
-					console.log("[${hostname(options.domain)}] Something went wrong with your request to webmention.io!", error)
+					console.log(`[${hostname(options.domain)}] Something went wrong with your request to webmention.io!`, error)
 				})
 		}
 
