@@ -1,6 +1,6 @@
 {
   "name": "@chrisburnell/eleventy-cache-webmentions",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "Cache webmentions from webmention.io using eleventy-cache-assets.",
   "main": "eleventy-cache-webmentions.js",
   "author": "Chris Burnell <me@chrisburnell.com>",
@@ -23,6 +23,9 @@
     "sanitize-html": "^2.5.2"
   },
   "keywords": [
-    "eleventy"
+    "eleventy",
+    "eleventy-plugin",
+    "indieweb",
+    "webmention"
   ]
 }

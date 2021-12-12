@@ -1,4 +1,4 @@
-# eleventy-cache-assets
+# eleventy-cache-webmentions
 
 > Cache webmentions using eleventy-cache-assets and make them available to use in collections, templates, pages, etc.
 
