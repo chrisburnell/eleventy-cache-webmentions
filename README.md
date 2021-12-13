@@ -7,9 +7,9 @@
 - **With npm:** `npm install @chrisburnell/eleventy-cache-webmentions`
 - **Direct download:** [https://github.com/chrisburnell/eleventy-cache-webmentions/archive/master.zip](https://github.com/chrisburnell/eleventy-cache-webmentions/archive/master.zip)
 
-## Learn more
+## Documentation
 
-I wrote more about **eleventy-cache-webmentions** here: [https://chrisburnell.com/eleventy-cache-webmentions/](https://chrisburnell.com/eleventy-cache-webmentions/).
+The full **eleventy-cache-webmentions** documentation can be found here: [chrisburnell.com/eleventy-cache-webmentions/](https://chrisburnell.com/eleventy-cache-webmentions/).
 
 ## Authors
 

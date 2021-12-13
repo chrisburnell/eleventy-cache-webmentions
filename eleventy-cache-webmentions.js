@@ -45,7 +45,6 @@ const epoch = (value) => {
 module.exports = (eleventyConfig, options = {}) => {
 	options = Object.assign(
 		{
-			duration: "23h",
 			key: "webmentions",
 			allowedHTML: {
 				allowedTags: ["b", "i", "em", "strong", "a"],
@@ -61,7 +60,7 @@ module.exports = (eleventyConfig, options = {}) => {
 	)
 
 	const fetchWebmentions = async () => {
-		let asset = new AssetCache(options.key)
+		let asset = new AssetCache(options.uniqueKey || options.key)
 		asset.ensureDir()
 
 		let webmentions = {
@@ -78,7 +77,7 @@ module.exports = (eleventyConfig, options = {}) => {
 		// If there is a cached file but it is outside of expiry, fetch fresh
 		// results since the most recent
 		if (!asset.isCacheValid(options.duration)) {
-			const since = asset._cache.getKey(options.key) ? asset._cache.getKey(options.key).cachedAt : false
+			const since = asset._cache.getKey(options.uniqueKey || options.key) ? asset._cache.getKey(options.uniqueKey || options.key).cachedAt : false
 			const url = `https://webmention.io/api/mentions.jf2?domain=${hostname(options.domain)}&token=${TOKEN}&per-page=9001${since ? `&since=${since}` : ``}`
 			await fetch(url)
 				.then(async (response) => {
