@@ -77,7 +77,7 @@ module.exports = (eleventyConfig, options = {}) => {
 		// If there is a cached file but it is outside of expiry, fetch fresh
 		// results since the most recent
 		if (!asset.isCacheValid(options.duration)) {
-			const since = asset._cache.getKey(options.uniqueKey || options.key) ? asset._cache.getKey(options.uniqueKey || options.key).cachedAt : false
+			const since = webmentions.children.length ? webmentions.children[0].published || webmentions.children[0]["wm-received"] : false
 			const url = `https://webmention.io/api/mentions.jf2?domain=${hostname(options.domain)}&token=${TOKEN}&per-page=9001${since ? `&since=${since}` : ``}`
 			await fetch(url)
 				.then(async (response) => {
