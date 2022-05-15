@@ -104,7 +104,7 @@ module.exports = (eleventyConfig, options = {}) => {
 		const rawWebmentions = await fetchWebmentions()
 		let webmentions = {}
 
-		// Sort Webmentions into groups by target
+		// Sort Webmentions into groups by `wm-target`
 		rawWebmentions.children.forEach((webmention) => {
 			// Get the target of the Webmention and fix it up
 			let url = baseUrl(fixUrl(webmention["wm-target"].replace(/\/?$/, "/"), options.urlReplacements))
@@ -116,10 +116,10 @@ module.exports = (eleventyConfig, options = {}) => {
 			webmentions[url].push(webmention)
 		})
 
-		// Sort Webmentions in groups by url and remove duplicates by wm-id
+		// Sort Webmentions in groups by url and remove duplicates by `url`
 		for (let url in webmentions) {
 			webmentions[url] = uniqBy(webmentions[url], (item) => {
-				return item["wm-id"]
+				return item["url"]
 			})
 		}
 
