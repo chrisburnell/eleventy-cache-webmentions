@@ -3,11 +3,6 @@ const sanitizeHTML = require("sanitize-html")
 const uniqBy = require("lodash/uniqBy")
 const { AssetCache } = require("@11ty/eleventy-fetch")
 
-// Load .env variables with dotenv
-require("dotenv").config()
-
-const TOKEN = process.env.WEBMENTION_IO_TOKEN
-
 const absoluteURL = (url, domain) => {
 	try {
 		return new URL(url, domain).toString()
@@ -45,7 +40,7 @@ const epoch = (value) => {
 module.exports = (eleventyConfig, options = {}) => {
 	options = Object.assign(
 		{
-			key: "webmentions",
+			uniqueKey: "webmentions",
 			allowedHTML: {
 				allowedTags: ["b", "i", "em", "strong", "a"],
 				allowedAttributes: {
@@ -60,14 +55,10 @@ module.exports = (eleventyConfig, options = {}) => {
 	)
 
 	const fetchWebmentions = async () => {
-		let asset = new AssetCache(options.uniqueKey || options.key)
+		let asset = new AssetCache(options.uniqueKey)
 		asset.ensureDir()
 
-		let webmentions = {
-			type: "feed",
-			name: "Webmentions",
-			children: [],
-		}
+		let webmentions = []
 
 		// If there is a cached file at all, grab its contents now
 		if (asset.isCacheValid("9001y")) {
@@ -75,25 +66,27 @@ module.exports = (eleventyConfig, options = {}) => {
 		}
 
 		// If there is a cached file but it is outside of expiry, fetch fresh
-		// results since the most recent
+		// results since the most recent webmention
 		if (!asset.isCacheValid(options.duration)) {
-			const since = webmentions.children.length ? webmentions.children[0]["wm-received"] : false
-			const url = `https://webmention.io/api/mentions.jf2?domain=${hostname(options.domain)}&token=${TOKEN}&per-page=9001${since ? `&since=${since}` : ``}`
+			const since = webmentions.length ? webmentions[0]["wm-received"] || webmentions[0]["published"] : false
+			const url = `${options.feed}${since && options.feed.includes("https://webmention.io") ? `&since=${since}` : ""}`
 			await fetch(url)
 				.then(async (response) => {
 					if (response.ok) {
 						const feed = await response.json()
-						if (feed.children.length) {
-							console.log(`[${hostname(options.domain)}] ${feed.children.length} new Webmentions fetched into cache.`)
+						if (feed[options.key].length) {
+							webmentions = uniqBy([...feed[options.key], ...webmentions], (item) => {
+								return item["wm-source"] || item["source"]
+							})
+							console.log(`[${hostname(options.domain)}] ${feed[options.key].length} new Webmentions fetched into cache.`)
 						}
-						webmentions.children = [...feed.children, ...webmentions.children]
 						await asset.save(webmentions, "json")
 						return webmentions
 					}
 					return Promise.reject(response)
 				})
 				.catch((error) => {
-					console.log(`[${hostname(options.domain)}] Something went wrong with your request to webmention.io!`, error)
+					console.log(`[${hostname(options.domain)}] Something went wrong with your request to ${hostname(options.feed)}!`, error)
 				})
 		}
 
@@ -104,10 +97,10 @@ module.exports = (eleventyConfig, options = {}) => {
 		const rawWebmentions = await fetchWebmentions()
 		let webmentions = {}
 
-		// Sort Webmentions into groups by `wm-target`
-		rawWebmentions.children.forEach((webmention) => {
+		// Sort Webmentions into groups by `wm-target` || `target`
+		rawWebmentions.forEach((webmention) => {
 			// Get the target of the Webmention and fix it up
-			let url = baseUrl(fixUrl(webmention["wm-target"].replace(/\/?$/, "/"), options.urlReplacements))
+			let url = baseUrl(fixUrl((webmention["wm-target"] || webmention["target"]).replace(/\/?$/, "/"), options.urlReplacements))
 
 			if (!webmentions[url]) {
 				webmentions[url] = []
@@ -137,7 +130,7 @@ module.exports = (eleventyConfig, options = {}) => {
 		const results = webmentions[url]
 			// filter webmentions by allowed response post types
 			.filter((entry) => {
-				return typeof allowedTypes === "object" && Object.keys(allowedTypes).length ? allowedTypes.includes(entry["wm-property"]) : true
+				return typeof allowedTypes === "object" && Object.keys(allowedTypes).length ? allowedTypes.includes(entry["wm-property"] || entry["type"]) : true
 			})
 			// remove webmentions without an author name
 			.filter((entry) => {
@@ -151,7 +144,7 @@ module.exports = (eleventyConfig, options = {}) => {
 				}
 				const { html, text } = entry.content
 				if (html && html.length > options.maximumHtmlLength) {
-					entry.content.value = `${options.maximumHtmlText} <a href="${entry["wm-source"]}">${entry["wm-source"]}</a>`
+					entry.content.value = `${options.maximumHtmlText} <a href="${entry["wm-source"] || entry["source"]}">${entry["wm-source"] || entry["source"]}</a>`
 				} else if (Object.keys(options.allowedHTML).length) {
 					entry.content.value = sanitizeHTML(html || text, options.allowedHTML)
 				} else {
@@ -159,9 +152,9 @@ module.exports = (eleventyConfig, options = {}) => {
 				}
 				return entry
 			})
-			// sort by published/wm-received
+			// sort by `wm-received` || `published`
 			.sort((a, b) => {
-				return epoch(a.published || a["wm-received"]) - epoch(b.published || b["wm-received"])
+				return epoch(a["wm-received"] || a.published) - epoch(b["wm-received"] || b.published)
 			})
 
 		return results
@@ -178,14 +171,24 @@ module.exports = (eleventyConfig, options = {}) => {
 
 	if (eleventyConfig && options) {
 		if (!options.domain) {
-			throw new Error("domain is a required option to be passed when adding the plugin to your eleventyConfig using addPlugin.")
+			throw new Error("domain is a required field when adding the plugin to your eleventyConfig using addPlugin. See https://chrisburnell.com/eleventy-cache-webmentions/#installation for more information.")
 		}
 
-		// Liquid/Nunjucks Filters
+		if (!options.feed) {
+			throw new Error("feed is a required field when adding the plugin to your eleventyConfig using addPlugin. See https://chrisburnell.com/eleventy-cache-webmentions/#installation for more information.")
+		}
+
+		if (!options.key) {
+			throw new Error("key is a required field when adding the plugin to your eleventyConfig using addPlugin. See https://chrisburnell.com/eleventy-cache-webmentions/#installation for more information.")
+		}
+
+		// Liquid Filter
 		eleventyConfig.addLiquidFilter("getWebmentions", getWebmentionsFilter)
+
+		// Nunjucks Filter
 		eleventyConfig.addNunjucksAsyncFilter("getWebmentions", getWebmentionsFilter)
 
-		// Eleventy Data
+		// Global Data
 		eleventyConfig.addGlobalData("webmentions", filteredWebmentions)
 	} else {
 		// JavaScript
