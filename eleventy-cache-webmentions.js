@@ -37,6 +37,26 @@ const epoch = (value) => {
 	return new Date(value).getTime()
 }
 
+const getPublished = (webmention) => {
+	return webmention["wm-received"] || webmention?.["data"]["published"] || webmention["verified_date"] || webmention["published"]
+}
+
+const getContent = (webmention) => {
+	return webmention?.["content"]["html"] || webmention["content"] || webmention?.["data"]["content"]
+}
+
+const getSource = (webmention) => {
+	return webmention["url"] || webmention?.["data"]["url"] || webmention["wm-source"] || webmention["source"]
+}
+
+const getTarget = (webmention) => {
+	return webmention["wm-target"] || webmention["target"]
+}
+
+const getType = (webmention) => {
+	return webmention["wm-property"] || webmention?.["activity"]["type"] || webmention["type"]
+}
+
 module.exports = (eleventyConfig, options = {}) => {
 	options = Object.assign(
 		{
@@ -68,15 +88,15 @@ module.exports = (eleventyConfig, options = {}) => {
 		// If there is a cached file but it is outside of expiry, fetch fresh
 		// results since the most recent webmention
 		if (!asset.isCacheValid(options.duration)) {
-			const since = webmentions.length ? webmentions[0]["wm-received"] || webmentions[0]["published"] : false
-			const url = `${options.feed}${since && options.feed.includes("https://webmention.io") ? `&since=${since}` : ""}`
+			const since = webmentions.length ? getPublished(webmentions[0]) : false
+			const url = `${options.feed}${since ? `${options.feed.includes("?") ? "&" : "?"}since=${since}` : ""}`
 			await fetch(url)
 				.then(async (response) => {
 					if (response.ok) {
 						const feed = await response.json()
 						if (feed[options.key].length) {
-							webmentions = uniqBy([...feed[options.key], ...webmentions], (item) => {
-								return item["wm-source"] || item["source"]
+							webmentions = uniqBy([...feed[options.key], ...webmentions], (entry) => {
+								return getSource(entry)
 							})
 							console.log(`[${hostname(options.domain)}] ${feed[options.key].length} new Webmentions fetched into cache.`)
 						}
@@ -97,10 +117,10 @@ module.exports = (eleventyConfig, options = {}) => {
 		const rawWebmentions = await fetchWebmentions()
 		let webmentions = {}
 
-		// Sort Webmentions into groups by `wm-target` || `target`
+		// Sort Webmentions into groups by target
 		rawWebmentions.forEach((webmention) => {
 			// Get the target of the Webmention and fix it up
-			let url = baseUrl(fixUrl((webmention["wm-target"] || webmention["target"]).replace(/\/?$/, "/"), options.urlReplacements))
+			let url = baseUrl(fixUrl(getTarget(webmention).replace(/\/?$/, "/"), options.urlReplacements))
 
 			if (!webmentions[url]) {
 				webmentions[url] = []
@@ -111,8 +131,8 @@ module.exports = (eleventyConfig, options = {}) => {
 
 		// Sort Webmentions in groups by url and remove duplicates by `url`
 		for (let url in webmentions) {
-			webmentions[url] = uniqBy(webmentions[url], (item) => {
-				return item["url"]
+			webmentions[url] = uniqBy(webmentions[url], (entry) => {
+				return getSource(entry)
 			})
 		}
 
@@ -130,31 +150,26 @@ module.exports = (eleventyConfig, options = {}) => {
 		const results = webmentions[url]
 			// filter webmentions by allowed response post types
 			.filter((entry) => {
-				return typeof allowedTypes === "object" && Object.keys(allowedTypes).length ? allowedTypes.includes(entry["wm-property"] || entry["type"]) : true
+				return typeof allowedTypes === "object" && Object.keys(allowedTypes).length ? allowedTypes.includes(getType(entry)) : true
 			})
-			// remove webmentions without an author name
-			.filter((entry) => {
-				const { author } = entry
-				return !!author && !!author.name
-			})
-			// sanitize content of webmentions and check against HTML limit
+			// sanitize content of webmentions against HTML limit
 			.map((entry) => {
-				if (!("content" in entry)) {
+				if (!("content" in entry) || !("data" in entry)) {
 					return entry
 				}
-				const { html, text } = entry.content
+				const html = getContent(entry)
 				if (html && html.length > options.maximumHtmlLength) {
-					entry.content.value = `${options.maximumHtmlText} <a href="${entry["wm-source"] || entry["source"]}">${entry["wm-source"] || entry["source"]}</a>`
+					entry.content = `${options.maximumHtmlText} <a href="${getSource(entry)}">${getSource(entry)}</a>`
 				} else if (Object.keys(options.allowedHTML).length) {
-					entry.content.value = sanitizeHTML(html || text, options.allowedHTML)
+					entry.content = sanitizeHTML(html, options.allowedHTML)
 				} else {
-					entry.content.value = html || text
+					entry.content = html
 				}
 				return entry
 			})
-			// sort by `wm-received` || `published`
+			// sort by published
 			.sort((a, b) => {
-				return epoch(a["wm-received"] || a.published) - epoch(b["wm-received"] || b.published)
+				return epoch(getPublished(a)) - epoch(getPublished(b))
 			})
 
 		return results
