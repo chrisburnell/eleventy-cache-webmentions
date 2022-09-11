@@ -2,6 +2,7 @@ const fetch = require("node-fetch")
 const sanitizeHTML = require("sanitize-html")
 const uniqBy = require("lodash/uniqBy")
 const { AssetCache } = require("@11ty/eleventy-fetch")
+const { defaultsDeep } = require("lodash")
 
 const absoluteURL = (url, domain) => {
 	try {
@@ -57,156 +58,157 @@ const getType = (webmention) => {
 	return webmention["wm-property"] || webmention?.["activity"]["type"] || webmention["type"]
 }
 
-module.exports = (eleventyConfig, options = {}) => {
-	options = Object.assign(
-		{
-			uniqueKey: "webmentions",
-			allowedHTML: {
-				allowedTags: ["b", "i", "em", "strong", "a"],
-				allowedAttributes: {
-					a: ["href"],
-				},
-			},
-			urlReplacements: {},
-			maximumHtmlLength: 2000,
-			maximumHtmlText: "mentioned this in",
+const defaults = {
+	uniqueKey: "webmentions",
+	allowedHTML: {
+		allowedTags: ["b", "i", "em", "strong", "a"],
+		allowedAttributes: {
+			a: ["href"],
 		},
-		options
-	)
+	},
+	urlReplacements: {},
+	maximumHtmlLength: 2000,
+	maximumHtmlText: "mentioned this in",
+}
 
-	const fetchWebmentions = async () => {
-		let asset = new AssetCache(options.uniqueKey)
-		asset.ensureDir()
+const fetchWebmentions = async (options) => {
+	let asset = new AssetCache(options.uniqueKey)
+	asset.ensureDir()
 
-		let webmentions = []
+	let webmentions = []
 
-		// If there is a cached file at all, grab its contents now
-		if (asset.isCacheValid("9001y")) {
-			webmentions = await asset.getCachedValue()
-		}
-
-		// If there is a cached file but it is outside of expiry, fetch fresh
-		// results since the most recent webmention
-		if (!asset.isCacheValid(options.duration)) {
-			const since = webmentions.length ? getPublished(webmentions[0]) : false
-			const url = `${options.feed}${since ? `${options.feed.includes("?") ? "&" : "?"}since=${since}` : ""}`
-			await fetch(url)
-				.then(async (response) => {
-					if (response.ok) {
-						const feed = await response.json()
-						if (feed[options.key].length) {
-							webmentions = uniqBy([...feed[options.key], ...webmentions], (entry) => {
-								return getSource(entry)
-							})
-							console.log(`[${hostname(options.domain)}] ${feed[options.key].length} new Webmentions fetched into cache.`)
-						}
-						await asset.save(webmentions, "json")
-						return webmentions
-					}
-					return Promise.reject(response)
-				})
-				.catch((error) => {
-					console.log(`[${hostname(options.domain)}] Something went wrong with your request to ${hostname(options.feed)}!`, error)
-				})
-		}
-
-		return webmentions
+	// If there is a cached file at all, grab its contents now
+	if (asset.isCacheValid("9001y")) {
+		webmentions = await asset.getCachedValue()
 	}
 
-	const filteredWebmentions = async () => {
-		const rawWebmentions = await fetchWebmentions()
-		let webmentions = {}
+	// If there is a cached file but it is outside of expiry, fetch fresh
+	// results since the most recent webmention
+	if (!asset.isCacheValid(options.duration)) {
+		const since = webmentions.length ? getPublished(webmentions[0]) : false
+		const url = `${options.feed}${since ? `${options.feed.includes("?") ? "&" : "?"}since=${since}` : ""}`
+		await fetch(url)
+			.then(async (response) => {
+				if (response.ok) {
+					const feed = await response.json()
+					if (feed[options.key].length) {
+						webmentions = uniqBy([...feed[options.key], ...webmentions], (entry) => {
+							return getSource(entry)
+						})
+						console.log(`[${hostname(options.domain)}] ${feed[options.key].length} new Webmentions fetched into cache.`)
+					}
+					await asset.save(webmentions, "json")
+					return webmentions
+				}
+				return Promise.reject(response)
+			})
+			.catch((error) => {
+				console.log(`[${hostname(options.domain)}] Something went wrong with your request to ${hostname(options.feed)}!`, error)
+			})
+	}
 
-		// Sort Webmentions into groups by target
-		rawWebmentions.forEach((webmention) => {
-			// Get the target of the Webmention and fix it up
-			let url = baseUrl(fixUrl(getTarget(webmention).replace(/\/?$/, "/"), options.urlReplacements))
+	return webmentions
+}
 
-			if (!webmentions[url]) {
-				webmentions[url] = []
+const filteredWebmentions = async (options) => {
+	const rawWebmentions = await fetchWebmentions(options)
+	let webmentions = {}
+
+	// Sort Webmentions into groups by target
+	rawWebmentions.forEach((webmention) => {
+		// Get the target of the Webmention and fix it up
+		let url = baseUrl(fixUrl(getTarget(webmention).replace(/\/?$/, "/"), options.urlReplacements))
+
+		if (!webmentions[url]) {
+			webmentions[url] = []
+		}
+
+		webmentions[url].push(webmention)
+	})
+
+	// Sort Webmentions in groups by url and remove duplicates by `url`
+	for (let url in webmentions) {
+		webmentions[url] = uniqBy(webmentions[url], (entry) => {
+			return getSource(entry)
+		})
+	}
+
+	return webmentions
+}
+
+const getWebmentions = async (options, url, allowedTypes = {}) => {
+	const webmentions = await filteredWebmentions(options)
+	url = absoluteURL(url, options.domain)
+
+	if (!url || !webmentions || !webmentions[url]) {
+		return []
+	}
+
+	const results = webmentions[url]
+		// filter webmentions by allowed response post types
+		.filter((entry) => {
+			return typeof allowedTypes === "object" && Object.keys(allowedTypes).length ? allowedTypes.includes(getType(entry)) : true
+		})
+		// sanitize content of webmentions against HTML limit
+		.map((entry) => {
+			if (!("content" in entry) || !("data" in entry)) {
+				return entry
 			}
-
-			webmentions[url].push(webmention)
+			const html = getContent(entry)
+			if (html && html.length > options.maximumHtmlLength) {
+				entry.content = `${options.maximumHtmlText} <a href="${getSource(entry)}">${getSource(entry)}</a>`
+			} else if (Object.keys(options.allowedHTML).length) {
+				entry.content = sanitizeHTML(html, options.allowedHTML)
+			} else {
+				entry.content = html
+			}
+			return entry
+		})
+		// sort by published
+		.sort((a, b) => {
+			return epoch(getPublished(a)) - epoch(getPublished(b))
 		})
 
-		// Sort Webmentions in groups by url and remove duplicates by `url`
-		for (let url in webmentions) {
-			webmentions[url] = uniqBy(webmentions[url], (entry) => {
-				return getSource(entry)
-			})
-		}
+	return results
+}
 
-		return webmentions
+const getWebmentionsFilter = async (options, url, allowedTypes, callback) => {
+	if (typeof callback !== "function") {
+		callback = allowedTypes
+		allowedTypes = {}
+	}
+	const webmentions = await getWebmentions(options, url, allowedTypes)
+	callback(null, webmentions)
+}
+
+module.exports = (eleventyConfig, options = {}) => {
+	options = Object.assign(defaults, options)
+
+	if (!options.domain) {
+		throw new Error("domain is a required field when adding the plugin to your eleventyConfig using addPlugin. See https://chrisburnell.com/eleventy-cache-webmentions/#installation for more information.")
 	}
 
-	const getWebmentions = async (url, allowedTypes = {}) => {
-		const webmentions = await filteredWebmentions()
-		url = absoluteURL(url, options.domain)
-
-		if (!url || !webmentions || !webmentions[url]) {
-			return []
-		}
-
-		const results = webmentions[url]
-			// filter webmentions by allowed response post types
-			.filter((entry) => {
-				return typeof allowedTypes === "object" && Object.keys(allowedTypes).length ? allowedTypes.includes(getType(entry)) : true
-			})
-			// sanitize content of webmentions against HTML limit
-			.map((entry) => {
-				if (!("content" in entry) || !("data" in entry)) {
-					return entry
-				}
-				const html = getContent(entry)
-				if (html && html.length > options.maximumHtmlLength) {
-					entry.content = `${options.maximumHtmlText} <a href="${getSource(entry)}">${getSource(entry)}</a>`
-				} else if (Object.keys(options.allowedHTML).length) {
-					entry.content = sanitizeHTML(html, options.allowedHTML)
-				} else {
-					entry.content = html
-				}
-				return entry
-			})
-			// sort by published
-			.sort((a, b) => {
-				return epoch(getPublished(a)) - epoch(getPublished(b))
-			})
-
-		return results
+	if (!options.feed) {
+		throw new Error("feed is a required field when adding the plugin to your eleventyConfig using addPlugin. See https://chrisburnell.com/eleventy-cache-webmentions/#installation for more information.")
 	}
 
-	const getWebmentionsFilter = async (url, allowedTypes, callback) => {
-		if (typeof callback !== "function") {
-			callback = allowedTypes
-			allowedTypes = {}
-		}
-		const webmentions = await getWebmentions(url, allowedTypes)
-		callback(null, webmentions)
+	if (!options.key) {
+		throw new Error("key is a required field when adding the plugin to your eleventyConfig using addPlugin. See https://chrisburnell.com/eleventy-cache-webmentions/#installation for more information.")
 	}
 
-	if (eleventyConfig && options) {
-		if (!options.domain) {
-			throw new Error("domain is a required field when adding the plugin to your eleventyConfig using addPlugin. See https://chrisburnell.com/eleventy-cache-webmentions/#installation for more information.")
-		}
-
-		if (!options.feed) {
-			throw new Error("feed is a required field when adding the plugin to your eleventyConfig using addPlugin. See https://chrisburnell.com/eleventy-cache-webmentions/#installation for more information.")
-		}
-
-		if (!options.key) {
-			throw new Error("key is a required field when adding the plugin to your eleventyConfig using addPlugin. See https://chrisburnell.com/eleventy-cache-webmentions/#installation for more information.")
-		}
+	if (eleventyConfig) {
+		// Global Data
+		eleventyConfig.addGlobalData("webmentions", filteredWebmentions(options))
 
 		// Liquid Filter
 		eleventyConfig.addLiquidFilter("getWebmentions", getWebmentionsFilter)
 
 		// Nunjucks Filter
 		eleventyConfig.addNunjucksAsyncFilter("getWebmentions", getWebmentionsFilter)
+	}
 
-		// Global Data
-		eleventyConfig.addGlobalData("webmentions", filteredWebmentions)
-	} else {
-		// JavaScript
-		return filteredWebmentions
+	return {
+		webmentions: filteredWebmentions(options),
+		getWebmentions: getWebmentions,
 	}
 }
