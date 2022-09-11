@@ -169,16 +169,13 @@ const getWebmentions = async (options, url, allowedTypes = {}) => {
 			.map((entry) => {
 				const html = getContent(entry)
 
-				if (html.length > options.maximumHtmlLength) {
-					console.log(entry.data.url, "too long")
-					entry.content = `${options.maximumHtmlText} <a href="${getSource(entry)}">${getSource(entry)}</a>`
-				} else if (html.length && Object.keys(options.allowedHTML).length) {
-					// console.log("sanitize")
+				if (html.length) {
 					entry.content = sanitizeHTML(html, options.allowedHTML)
-				} else {
-					// console.log("default")
-					entry.content = html
+					if (html.length > options.maximumHtmlLength) {
+						entry.content = `${options.maximumHtmlText} <a href="${getSource(entry)}">${getSource(entry)}</a>`
+					}
 				}
+
 				return entry
 			})
 			// sort by published
