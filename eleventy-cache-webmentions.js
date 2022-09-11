@@ -2,7 +2,6 @@ const fetch = require("node-fetch")
 const sanitizeHTML = require("sanitize-html")
 const uniqBy = require("lodash/uniqBy")
 const { AssetCache } = require("@11ty/eleventy-fetch")
-const { defaultsDeep } = require("lodash")
 
 const absoluteURL = (url, domain) => {
 	try {
@@ -43,7 +42,7 @@ const getPublished = (webmention) => {
 }
 
 const getContent = (webmention) => {
-	return webmention?.["content"]["html"] || webmention["content"] || webmention?.["data"]["content"]
+	return webmention?.["content"]?.["html"] || webmention?.["content"] || webmention?.["data"]?.["content"] || ""
 }
 
 const getSource = (webmention) => {
@@ -67,25 +66,25 @@ const defaults = {
 		},
 	},
 	urlReplacements: {},
-	maximumHtmlLength: 2000,
+	maximumHtmlLength: 1000,
 	maximumHtmlText: "mentioned this in",
 }
 
 const fetchWebmentions = async (options) => {
 	if (!options.domain) {
-		throw new Error("domain is a required field when adding the plugin to your eleventyConfig using addPlugin. See https://chrisburnell.com/eleventy-cache-webmentions/#installation for more information.")
+		throw new Error("domain is a required field when attempting to retrieve Webmentions. See https://chrisburnell.com/eleventy-cache-webmentions/#installation for more information.")
 	}
 
 	if (!options.feed) {
-		throw new Error("feed is a required field when adding the plugin to your eleventyConfig using addPlugin. See https://chrisburnell.com/eleventy-cache-webmentions/#installation for more information.")
+		throw new Error("feed is a required field when attempting to retrieve Webmentions. See https://chrisburnell.com/eleventy-cache-webmentions/#installation for more information.")
 	}
 
 	if (!options.key) {
-		throw new Error("key is a required field when adding the plugin to your eleventyConfig using addPlugin. See https://chrisburnell.com/eleventy-cache-webmentions/#installation for more information.")
+		throw new Error("key is a required field when attempting to retrieve Webmentions. See https://chrisburnell.com/eleventy-cache-webmentions/#installation for more information.")
 	}
 
 	if (!options.uniqueKey) {
-		throw new Error("uniqueKey is a required field when adding the plugin to your eleventyConfig using addPlugin. See https://chrisburnell.com/eleventy-cache-webmentions/#installation for more information.")
+		throw new Error("uniqueKey is a required field when attempting to retrieve Webmentions. See https://chrisburnell.com/eleventy-cache-webmentions/#installation for more information.")
 	}
 
 	let asset = new AssetCache(options.uniqueKey)
@@ -160,32 +159,33 @@ const getWebmentions = async (options, url, allowedTypes = {}) => {
 		return []
 	}
 
-	const results = webmentions[url]
-		// filter webmentions by allowed response post types
-		.filter((entry) => {
-			return typeof allowedTypes === "object" && Object.keys(allowedTypes).length ? allowedTypes.includes(getType(entry)) : true
-		})
-		// sanitize content of webmentions against HTML limit
-		.map((entry) => {
-			if (!("content" in entry) || !("data" in entry)) {
-				return entry
-			}
-			const html = getContent(entry)
-			if (html && html.length > options.maximumHtmlLength) {
-				entry.content = `${options.maximumHtmlText} <a href="${getSource(entry)}">${getSource(entry)}</a>`
-			} else if (Object.keys(options.allowedHTML).length) {
-				entry.content = sanitizeHTML(html, options.allowedHTML)
-			} else {
-				entry.content = html
-			}
-			return entry
-		})
-		// sort by published
-		.sort((a, b) => {
-			return epoch(getPublished(a)) - epoch(getPublished(b))
-		})
+	return (
+		webmentions[url]
+			// filter webmentions by allowed response post types
+			.filter((entry) => {
+				return typeof allowedTypes === "object" && Object.keys(allowedTypes).length ? allowedTypes.includes(getType(entry)) : true
+			})
+			// sanitize content of webmentions against HTML limit
+			.map((entry) => {
+				const html = getContent(entry)
 
-	return results
+				if (html.length > options.maximumHtmlLength) {
+					console.log(entry.data.url, "too long")
+					entry.content = `${options.maximumHtmlText} <a href="${getSource(entry)}">${getSource(entry)}</a>`
+				} else if (html.length && Object.keys(options.allowedHTML).length) {
+					// console.log("sanitize")
+					entry.content = sanitizeHTML(html, options.allowedHTML)
+				} else {
+					// console.log("default")
+					entry.content = html
+				}
+				return entry
+			})
+			// sort by published
+			.sort((a, b) => {
+				return epoch(getPublished(a)) - epoch(getPublished(b))
+			})
+	)
 }
 
 const getWebmentionsFilter = async (options, url, allowedTypes, callback) => {
@@ -213,7 +213,6 @@ module.exports = (eleventyConfig, options = {}) => {
 
 	return {
 		defaults: defaults,
-		webmentions: filteredWebmentions(options),
 		fetchWebmentions: fetchWebmentions,
 		filteredWebmentions: filteredWebmentions,
 		getWebmentions: getWebmentions,
