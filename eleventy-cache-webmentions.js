@@ -72,6 +72,22 @@ const defaults = {
 }
 
 const fetchWebmentions = async (options) => {
+	if (!options.domain) {
+		throw new Error("domain is a required field when adding the plugin to your eleventyConfig using addPlugin. See https://chrisburnell.com/eleventy-cache-webmentions/#installation for more information.")
+	}
+
+	if (!options.feed) {
+		throw new Error("feed is a required field when adding the plugin to your eleventyConfig using addPlugin. See https://chrisburnell.com/eleventy-cache-webmentions/#installation for more information.")
+	}
+
+	if (!options.key) {
+		throw new Error("key is a required field when adding the plugin to your eleventyConfig using addPlugin. See https://chrisburnell.com/eleventy-cache-webmentions/#installation for more information.")
+	}
+
+	if (!options.uniqueKey) {
+		throw new Error("uniqueKey is a required field when adding the plugin to your eleventyConfig using addPlugin. See https://chrisburnell.com/eleventy-cache-webmentions/#installation for more information.")
+	}
+
 	let asset = new AssetCache(options.uniqueKey)
 	asset.ensureDir()
 
@@ -183,18 +199,6 @@ const getWebmentionsFilter = async (options, url, allowedTypes, callback) => {
 
 module.exports = (eleventyConfig, options = {}) => {
 	options = Object.assign(defaults, options)
-
-	if (!options.domain) {
-		throw new Error("domain is a required field when adding the plugin to your eleventyConfig using addPlugin. See https://chrisburnell.com/eleventy-cache-webmentions/#installation for more information.")
-	}
-
-	if (!options.feed) {
-		throw new Error("feed is a required field when adding the plugin to your eleventyConfig using addPlugin. See https://chrisburnell.com/eleventy-cache-webmentions/#installation for more information.")
-	}
-
-	if (!options.key) {
-		throw new Error("key is a required field when adding the plugin to your eleventyConfig using addPlugin. See https://chrisburnell.com/eleventy-cache-webmentions/#installation for more information.")
-	}
 
 	if (eleventyConfig) {
 		// Global Data
