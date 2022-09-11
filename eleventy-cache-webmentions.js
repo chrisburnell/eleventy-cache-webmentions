@@ -208,7 +208,10 @@ module.exports = (eleventyConfig, options = {}) => {
 	}
 
 	return {
+		defaults: defaults,
 		webmentions: filteredWebmentions(options),
+		fetchWebmentions: fetchWebmentions,
+		filteredWebmentions: filteredWebmentions,
 		getWebmentions: getWebmentions,
 	}
 }
