@@ -18,7 +18,7 @@
   "dependencies": {
     "@11ty/eleventy-fetch": "^3.0.0",
     "lodash": "^4.17.21",
-    "node-fetch": "2.6.5",
+    "node-fetch": "^2.6.5",
     "sanitize-html": "^2.7.1"
   },
   "keywords": [
