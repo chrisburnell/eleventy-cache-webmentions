@@ -65,8 +65,8 @@ const defaults = {
 			a: ["href"],
 		},
 	},
-	allowed: [],
-	blocked: [],
+	allowlist: [],
+	blocklist: [],
 	urlReplacements: {},
 	maximumHtmlLength: 1000,
 	maximumHtmlText: "mentioned this in",
@@ -131,12 +131,12 @@ const filteredWebmentions = async (options) => {
 	const rawWebmentions = await fetchWebmentions(options)
 	let webmentions = {}
 
-	// Process the blocked list, if it has any entries
-	if (options.blocked.length) {
+	// Process the blocklist, if it has any entries
+	if (options.blocklist.length) {
 		rawWebmentions = rawWebmentions.filter((webmention) => {
 			let sourceUrl = getSource(webmention)
 
-			for (let url of options.blocked) {
+			for (let url of options.blocklist) {
 				if (sourceUrl.includes(url.replace(/\/?$/, "/"))) {
 					return false
 				}
@@ -146,12 +146,12 @@ const filteredWebmentions = async (options) => {
 		})
 	}
 
-	// Process the allowed list, if it has any entries
-	if (options.allowed.length) {
+	// Process the allowlist, if it has any entries
+	if (options.allowlist.length) {
 		rawWebmentions = rawWebmentions.filter((webmention) => {
 			let sourceUrl = getSource(webmention)
 
-			for (let url of options.allowed) {
+			for (let url of options.allowlist) {
 				if (sourceUrl.includes(url.replace(/\/?$/, "/"))) {
 					return true
 				}
