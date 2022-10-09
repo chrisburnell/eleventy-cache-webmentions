@@ -65,6 +65,8 @@ const defaults = {
 			a: ["href"],
 		},
 	},
+	allowed: [],
+	blocked: [],
 	urlReplacements: {},
 	maximumHtmlLength: 1000,
 	maximumHtmlText: "mentioned this in",
@@ -129,9 +131,39 @@ const filteredWebmentions = async (options) => {
 	const rawWebmentions = await fetchWebmentions(options)
 	let webmentions = {}
 
-	// Sort Webmentions into groups by target
+	// Process the blocked list, if it has any entries
+	if (options.blocked.length) {
+		rawWebmentions = rawWebmentions.filter((webmention) => {
+			let sourceUrl = getSource(webmention)
+
+			for (let url of options.blocked) {
+				if (sourceUrl.includes(url.replace(/\/?$/, "/"))) {
+					return false
+				}
+			}
+
+			return true
+		})
+	}
+
+	// Process the allowed list, if it has any entries
+	if (options.allowed.length) {
+		rawWebmentions = rawWebmentions.filter((webmention) => {
+			let sourceUrl = getSource(webmention)
+
+			for (let url of options.allowed) {
+				if (sourceUrl.includes(url.replace(/\/?$/, "/"))) {
+					return true
+				}
+			}
+
+			return false
+		})
+	}
+
+	// Fix local URLs based on urlReplacements and sort Webmentions into groups
+	// by target base URL
 	rawWebmentions.forEach((webmention) => {
-		// Get the target of the Webmention and fix it up
 		let url = baseUrl(fixUrl(getTarget(webmention).replace(/\/?$/, "/"), options.urlReplacements))
 
 		if (!webmentions[url]) {
@@ -141,7 +173,7 @@ const filteredWebmentions = async (options) => {
 		webmentions[url].push(webmention)
 	})
 
-	// Sort Webmentions in groups by url and remove duplicates by `url`
+	// Remove duplicates by source URL
 	for (let url in webmentions) {
 		webmentions[url] = uniqBy(webmentions[url], (entry) => {
 			return getSource(entry)
