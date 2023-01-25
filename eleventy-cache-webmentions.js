@@ -89,7 +89,7 @@ const fetchWebmentions = async (options) => {
 		throw new Error("uniqueKey is a required field when attempting to retrieve Webmentions. See https://chrisburnell.com/eleventy-cache-webmentions/#installation for more information.")
 	}
 
-	let asset = new AssetCache(options.uniqueKey)
+	let asset = new AssetCache(options.uniqueKey, options.directory)
 	asset.ensureDir()
 
 	let webmentions = []
