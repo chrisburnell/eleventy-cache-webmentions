@@ -128,7 +128,7 @@ const fetchWebmentions = async (options) => {
 }
 
 const filteredWebmentions = async (options) => {
-	const rawWebmentions = await fetchWebmentions(options)
+	let rawWebmentions = await fetchWebmentions(options)
 	let webmentions = {}
 
 	// Process the blocklist, if it has any entries
