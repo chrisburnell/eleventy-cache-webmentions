@@ -1,4 +1,5 @@
 .github
 .vscode
 .editorconfig
-.prettier
+.eslintrc.json
+.prettierrc
