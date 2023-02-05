@@ -8,8 +8,8 @@ I wrote a quicker and simpler guide to getting this Eleventy plugin working that
 
 ## Installation
 
--   **With npm:** `npm install @chrisburnell/eleventy-cache-webmentions`
--   **Direct download:** [https://github.com/chrisburnell/eleventy-cache-webmentions/archive/master.zip](https://github.com/chrisburnell/eleventy-cache-webmentions/archive/master.zip)
+- **With npm:** `npm install @chrisburnell/eleventy-cache-webmentions`
+- **Direct download:** [https://github.com/chrisburnell/eleventy-cache-webmentions/archive/master.zip](https://github.com/chrisburnell/eleventy-cache-webmentions/archive/master.zip)
 
 Once installed there are **two** more **required** set-up steps:
 
@@ -21,12 +21,12 @@ Inside your Eleventy config file (typically `.eleventy.js`), use `addPlugin`:
 const pluginWebmentions = require("@chrisburnell/eleventy-cache-webmentions")
 
 module.exports = function (eleventyConfig) {
-	eleventyConfig.addPlugin(pluginWebmentions, {
-		// these 3 fields are all required!
-		domain: "https://example.com",
-		feed: "https://webmentions.example.com?token=S3cr3tT0k3n",
-		key: "children",
-	})
+  eleventyConfig.addPlugin(pluginWebmentions, {
+    // these 3 fields are all required!
+    domain: "https://example.com",
+    feed: "https://webmentions.example.com?token=S3cr3tT0k3n",
+    key: "children",
+  })
 }
 ```
 
@@ -38,51 +38,51 @@ Advanced control over how the Webmentions are cached and processed is done by pa
 const pluginWebmentions = require("@chrisburnell/eleventy-cache-webmentions")
 
 module.exports = function (eleventyConfig) {
-	eleventyConfig.addPlugin(pluginWebmentions, {
-		// domain: required or the plugin will not function
-		//   this is the website that you want to pull in Webmentions for
-		domain: "https://example.com",
-		// feed: required or the plugin will not function
-		//   defines the URL of your Webmention server where a feed of Webmentions for your domain can be found
-		feed: "https://webmentions.example.com?token=S3cr3tT0k3n",
-		// key: required or the plugin will not function
-		//   dictates the key inside the feed where the array of Webmentions is located
-		key: "children",
-		// directory: ".cache" by default
-		//   see https://www.11ty.dev/docs/plugins/cache/#cache-directory for more info
-		directory: ".cache",
-		// duration: "1d" by default
-		//   see https://www.11ty.dev/docs/plugins/cache/#change-the-cache-duration for more info
-		duration: "1d",
-		// uniquekey: "webmentions" by default
-		//   dictates the name sent to eleventy-fetch to name the file
-		uniqueKey: "webmentions",
-		// allowedHTML: Object by default
-		//   see https://www.npmjs.com/package/sanitize-html for more info
-		allowedHTML: {
-			allowedTags: ["b", "i", "em", "strong", "a"],
-			allowedAttributes: {
-				a: ["href"],
-			},
-		},
-		// allowlist: [] by default
-		//   array of root URLs from which webmentions are wanted exclusively
-		allowlist: [],
-		// blocklist: [] by default
-		//   array of root URLs from which webmentions are not wanted
-		//   exclusively
-		blocklist: [],
-		// urlReplacements: {} by default
-		//   object of key:value pairs containing from:to URL replacements
-		urlReplacements: {},
-		// maximumHtmlLength: 2000 by default
-		//   number of characters in the HTML content at which a different
-		//   message is shown instead of the content
-		maximumHtmlLength: 2000,
-		// maximumHtmlText: "mentioned this in" by default
-		//   message shown when maximumHtmlLength is reached
-		maximumHtmlText: "mentioned this in",
-	})
+  eleventyConfig.addPlugin(pluginWebmentions, {
+    // domain: required or the plugin will not function
+    //   this is the website that you want to pull in Webmentions for
+    domain: "https://example.com",
+    // feed: required or the plugin will not function
+    //   defines the URL of your Webmention server where a feed of Webmentions for your domain can be found
+    feed: "https://webmentions.example.com?token=S3cr3tT0k3n",
+    // key: required or the plugin will not function
+    //   dictates the key inside the feed where the array of Webmentions is located
+    key: "children",
+    // directory: ".cache" by default
+    //   see https://www.11ty.dev/docs/plugins/cache/#cache-directory for more info
+    directory: ".cache",
+    // duration: "1d" by default
+    //   see https://www.11ty.dev/docs/plugins/cache/#change-the-cache-duration for more info
+    duration: "1d",
+    // uniquekey: "webmentions" by default
+    //   dictates the name sent to eleventy-fetch to name the file
+    uniqueKey: "webmentions",
+    // allowedHTML: Object by default
+    //   see https://www.npmjs.com/package/sanitize-html for more info
+    allowedHTML: {
+      allowedTags: ["b", "i", "em", "strong", "a"],
+      allowedAttributes: {
+        a: ["href"],
+      },
+    },
+    // allowlist: [] by default
+    //   array of root URLs from which webmentions are wanted exclusively
+    allowlist: [],
+    // blocklist: [] by default
+    //   array of root URLs from which webmentions are not wanted
+    //   exclusively
+    blocklist: [],
+    // urlReplacements: {} by default
+    //   object of key:value pairs containing from:to URL replacements
+    urlReplacements: {},
+    // maximumHtmlLength: 2000 by default
+    //   number of characters in the HTML content at which a different
+    //   message is shown instead of the content
+    maximumHtmlLength: 2000,
+    // maximumHtmlText: "mentioned this in" by default
+    //   message shown when maximumHtmlLength is reached
+    maximumHtmlText: "mentioned this in",
+  })
 }
 ```
 
@@ -92,9 +92,9 @@ Accessing the plugin in JavaScript in the way shown below will give you an Objec
 
 ```javascript
 const Webmentions = require("@chrisburnell/eleventy-cache-webmentions")(null, {
-	domain: "https://example.com",
-	feed: "https://webmentions.example.com?token=S3cr3tT0k3n",
-	key: "children",
+  domain: "https://example.com",
+  feed: "https://webmentions.example.com?token=S3cr3tT0k3n",
+  key: "children",
 })
 
 const webmentionsByUrl = await Webmentions()
@@ -104,28 +104,28 @@ This can prove to be very useful when building out your pages. Using [Eleventyâ€
 
 ```javascript
 const Webmentions = require("@chrisburnell/eleventy-cache-webmentions")(null, {
-	domain: "https://example.com",
-	feed: "https://webmentions.example.com?token=S3cr3tT0k3n",
-	key: "children",
+  domain: "https://example.com",
+  feed: "https://webmentions.example.com?token=S3cr3tT0k3n",
+  key: "children",
 })
 
 module.exports = async () => {
-	const webmentionsByUrl = await Webmentions()
+  const webmentionsByUrl = await Webmentions()
 
-	return {
-		eleventyComputed: {
-			webmentions: (data) => {
-				const webmentionsForUrl = webmentionsByUrl["https://example.com" + data.page.url] || []
+  return {
+    eleventyComputed: {
+      webmentions: (data) => {
+        const webmentionsForUrl = webmentionsByUrl["https://example.com" + data.page.url] || []
 
-				if (webmentionsForUrl.length) {
-					return webmentionsForUrl.sort((a, b) => {
-						return (b.data.published || b.verified_date) - (a.data.published || a.verified_date)
-					})
-				}
-				return []
-			},
-		},
-	}
+        if (webmentionsForUrl.length) {
+          return webmentionsForUrl.sort((a, b) => {
+            return (b.data.published || b.verified_date) - (a.data.published || a.verified_date)
+          })
+        }
+        return []
+      },
+    },
+  }
 }
 ```
 
@@ -133,11 +133,11 @@ You can now use this data in a number of useful ways, not limited to things like
 
 ```javascript
 module.exports = (eleventyConfig) => {
-	eleventyConfig.addCollection("popular", (collection) => {
-		return collection.sort((a, b) => {
-			return b.data.webmentions.length - a.data.webmentions.length
-		})
-	})
+  eleventyConfig.addCollection("popular", (collection) => {
+    return collection.sort((a, b) => {
+      return b.data.webmentions.length - a.data.webmentions.length
+    })
+  })
 }
 ```
 
@@ -190,11 +190,11 @@ WEBMENTION_IO_TOKEN=njJql0lKXnotreal4x3Wmd
 const pluginWebmentions = require("@chrisburnell/eleventy-cache-webmentions")
 
 module.exports = function (eleventyConfig) {
-	eleventyConfig.addPlugin(pluginWebmentions, {
-		domain: "https://example.com",
-		feed: `https://webmention.io/api/mentions.jf2?domain=example.com&per-page=9001&token=${process.env.WEBMENTION_IO_TOKEN}`,
-		key: "children",
-	})
+  eleventyConfig.addPlugin(pluginWebmentions, {
+    domain: "https://example.com",
+    feed: `https://webmention.io/api/mentions.jf2?domain=example.com&per-page=9001&token=${process.env.WEBMENTION_IO_TOKEN}`,
+    key: "children",
+  })
 }
 ```
 
@@ -216,11 +216,11 @@ GO_JAMMING_TOKEN=njJql0lKXnotreal4x3Wmd
 const pluginWebmentions = require("@chrisburnell/eleventy-cache-webmentions")
 
 module.exports = function (eleventyConfig) {
-	eleventyConfig.addPlugin(pluginWebmentions, {
-		domain: "https://example.com",
-		feed: `https://jam.example.com/webmention/example.com/${process.env.GO_JAMMING_TOKEN}`,
-		key: "json",
-	})
+  eleventyConfig.addPlugin(pluginWebmentions, {
+    domain: "https://example.com",
+    feed: `https://jam.example.com/webmention/example.com/${process.env.GO_JAMMING_TOKEN}`,
+    key: "json",
+  })
 }
 ```
 

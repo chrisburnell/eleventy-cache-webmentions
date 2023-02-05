@@ -74,19 +74,19 @@ const defaults = {
 
 const fetchWebmentions = async (options) => {
 	if (!options.domain) {
-		throw new Error("domain is a required field when attempting to retrieve Webmentions. See https://chrisburnell.com/eleventy-cache-webmentions/#installation for more information.")
+		throw new Error("domain is a required field when attempting to retrieve Webmentions. See https://www.npmjs.com/package/@chrisburnell/eleventy-cache-webmentions#installation for more information.")
 	}
 
 	if (!options.feed) {
-		throw new Error("feed is a required field when attempting to retrieve Webmentions. See https://chrisburnell.com/eleventy-cache-webmentions/#installation for more information.")
+		throw new Error("feed is a required field when attempting to retrieve Webmentions. See https://www.npmjs.com/package/@chrisburnell/eleventy-cache-webmentions#installation for more information.")
 	}
 
 	if (!options.key) {
-		throw new Error("key is a required field when attempting to retrieve Webmentions. See https://chrisburnell.com/eleventy-cache-webmentions/#installation for more information.")
+		throw new Error("key is a required field when attempting to retrieve Webmentions. See https://www.npmjs.com/package/@chrisburnell/eleventy-cache-webmentions#installation for more information.")
 	}
 
 	if (!options.uniqueKey) {
-		throw new Error("uniqueKey is a required field when attempting to retrieve Webmentions. See https://chrisburnell.com/eleventy-cache-webmentions/#installation for more information.")
+		throw new Error("uniqueKey is a required field when attempting to retrieve Webmentions. See https://www.npmjs.com/package/@chrisburnell/eleventy-cache-webmentions#installation for more information.")
 	}
 
 	let asset = new AssetCache(options.uniqueKey, options.directory)
@@ -127,9 +127,13 @@ const fetchWebmentions = async (options) => {
 	return webmentions
 }
 
+let filtered = {}
 const filteredWebmentions = async (options) => {
+	if (Object.entries(filtered).length) {
+		return filtered
+	}
+
 	let rawWebmentions = await fetchWebmentions(options)
-	let webmentions = {}
 
 	// Process the blocklist, if it has any entries
 	if (options.blocklist.length) {
@@ -166,21 +170,22 @@ const filteredWebmentions = async (options) => {
 	rawWebmentions.forEach((webmention) => {
 		let url = baseUrl(fixUrl(getTarget(webmention).replace(/\/?$/, "/"), options.urlReplacements))
 
-		if (!webmentions[url]) {
-			webmentions[url] = []
+
+		if (!filtered[url]) {
+			filtered[url] = []
 		}
 
-		webmentions[url].push(webmention)
+		filtered[url].push(webmention)
 	})
 
 	// Remove duplicates by source URL
-	for (let url in webmentions) {
-		webmentions[url] = uniqBy(webmentions[url], (entry) => {
+	for (let url in filtered) {
+		filtered[url] = uniqBy(filtered[url], (entry) => {
 			return getSource(entry)
 		})
 	}
 
-	return webmentions
+	return filtered
 }
 
 const getWebmentions = async (options, url, allowedTypes = {}) => {
