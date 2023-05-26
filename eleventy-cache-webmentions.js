@@ -7,7 +7,9 @@ const absoluteURL = (url, domain) => {
 	try {
 		return new URL(url, domain).toString()
 	} catch (e) {
-		console.log(`Trying to convert ${url} to be an absolute url with base ${domain} and failed.`)
+		console.log(
+			`Trying to convert ${url} to be an absolute url with base ${domain} and failed.`
+		)
 		return url
 	}
 }
@@ -19,10 +21,13 @@ const baseUrl = (url) => {
 }
 
 const fixUrl = (url, urlReplacements) => {
-	return Object.entries(urlReplacements).reduce((accumulator, [key, value]) => {
-		const regex = new RegExp(key, "g")
-		return accumulator.replace(regex, value)
-	}, url)
+	return Object.entries(urlReplacements).reduce(
+		(accumulator, [key, value]) => {
+			const regex = new RegExp(key, "g")
+			return accumulator.replace(regex, value)
+		},
+		url
+	)
 }
 
 const hostname = (value) => {
@@ -38,15 +43,30 @@ const epoch = (value) => {
 }
 
 const getPublished = (webmention) => {
-	return webmention["wm-received"] || webmention?.["data"]["published"] || webmention["verified_date"] || webmention["published"]
+	return (
+		webmention["wm-received"] ||
+		webmention?.["data"]["published"] ||
+		webmention["verified_date"] ||
+		webmention["published"]
+	)
 }
 
 const getContent = (webmention) => {
-	return webmention?.["content"]?.["html"] || webmention?.["content"] || webmention?.["data"]?.["content"] || ""
+	return (
+		webmention?.["content"]?.["html"] ||
+		webmention?.["content"] ||
+		webmention?.["data"]?.["content"] ||
+		""
+	)
 }
 
 const getSource = (webmention) => {
-	return webmention["url"] || webmention?.["data"]["url"] || webmention["wm-source"] || webmention["source"]
+	return (
+		webmention["url"] ||
+		webmention?.["data"]["url"] ||
+		webmention["wm-source"] ||
+		webmention["source"]
+	)
 }
 
 const getTarget = (webmention) => {
@@ -54,7 +74,11 @@ const getTarget = (webmention) => {
 }
 
 const getType = (webmention) => {
-	return webmention["wm-property"] || webmention?.["activity"]["type"] || webmention["type"]
+	return (
+		webmention["wm-property"] ||
+		webmention?.["activity"]["type"] ||
+		webmention["type"]
+	)
 }
 
 const defaults = {
@@ -74,19 +98,27 @@ const defaults = {
 
 const fetchWebmentions = async (options) => {
 	if (!options.domain) {
-		throw new Error("domain is a required field when attempting to retrieve Webmentions. See https://www.npmjs.com/package/@chrisburnell/eleventy-cache-webmentions#installation for more information.")
+		throw new Error(
+			"domain is a required field when attempting to retrieve Webmentions. See https://www.npmjs.com/package/@chrisburnell/eleventy-cache-webmentions#installation for more information."
+		)
 	}
 
 	if (!options.feed) {
-		throw new Error("feed is a required field when attempting to retrieve Webmentions. See https://www.npmjs.com/package/@chrisburnell/eleventy-cache-webmentions#installation for more information.")
+		throw new Error(
+			"feed is a required field when attempting to retrieve Webmentions. See https://www.npmjs.com/package/@chrisburnell/eleventy-cache-webmentions#installation for more information."
+		)
 	}
 
 	if (!options.key) {
-		throw new Error("key is a required field when attempting to retrieve Webmentions. See https://www.npmjs.com/package/@chrisburnell/eleventy-cache-webmentions#installation for more information.")
+		throw new Error(
+			"key is a required field when attempting to retrieve Webmentions. See https://www.npmjs.com/package/@chrisburnell/eleventy-cache-webmentions#installation for more information."
+		)
 	}
 
 	if (!options.uniqueKey) {
-		throw new Error("uniqueKey is a required field when attempting to retrieve Webmentions. See https://www.npmjs.com/package/@chrisburnell/eleventy-cache-webmentions#installation for more information.")
+		throw new Error(
+			"uniqueKey is a required field when attempting to retrieve Webmentions. See https://www.npmjs.com/package/@chrisburnell/eleventy-cache-webmentions#installation for more information."
+		)
 	}
 
 	let asset = new AssetCache(options.uniqueKey, options.directory)
@@ -103,16 +135,27 @@ const fetchWebmentions = async (options) => {
 	// results since the most recent webmention
 	if (!asset.isCacheValid(options.duration)) {
 		const since = webmentions.length ? getPublished(webmentions[0]) : false
-		const url = `${options.feed}${since ? `${options.feed.includes("?") ? "&" : "?"}since=${since}` : ""}`
+		const url = `${options.feed}${
+			since
+				? `${options.feed.includes("?") ? "&" : "?"}since=${since}`
+				: ""
+		}`
 		await fetch(url)
 			.then(async (response) => {
 				if (response.ok) {
 					const feed = await response.json()
 					if (feed[options.key].length) {
-						webmentions = uniqBy([...feed[options.key], ...webmentions], (entry) => {
-							return getSource(entry)
-						})
-						console.log(`[${hostname(options.domain)}] ${feed[options.key].length} new Webmentions fetched into cache.`)
+						webmentions = uniqBy(
+							[...feed[options.key], ...webmentions],
+							(entry) => {
+								return getSource(entry)
+							}
+						)
+						console.log(
+							`[${hostname(options.domain)}] ${
+								feed[options.key].length
+							} new Webmentions fetched into cache.`
+						)
 					}
 					await asset.save(webmentions, "json")
 					return webmentions
@@ -120,7 +163,14 @@ const fetchWebmentions = async (options) => {
 				return Promise.reject(response)
 			})
 			.catch((error) => {
-				console.log(`[${hostname(options.domain)}] Something went wrong with your request to ${hostname(options.feed)}!`, error)
+				console.log(
+					`[${hostname(
+						options.domain
+					)}] Something went wrong with your request to ${hostname(
+						options.feed
+					)}!`,
+					error
+				)
 			})
 	}
 
@@ -168,8 +218,12 @@ const filteredWebmentions = async (options) => {
 	// Fix local URLs based on urlReplacements and sort Webmentions into groups
 	// by target base URL
 	rawWebmentions.forEach((webmention) => {
-		let url = baseUrl(fixUrl(getTarget(webmention).replace(/\/?$/, "/"), options.urlReplacements))
-
+		let url = baseUrl(
+			fixUrl(
+				getTarget(webmention).replace(/\/?$/, "/"),
+				options.urlReplacements
+			)
+		)
 
 		if (!filtered[url]) {
 			filtered[url] = []
@@ -200,7 +254,10 @@ const getWebmentions = async (options, url, allowedTypes = {}) => {
 		webmentions[url]
 			// filter webmentions by allowed response post types
 			.filter((entry) => {
-				return typeof allowedTypes === "object" && Object.keys(allowedTypes).length ? allowedTypes.includes(getType(entry)) : true
+				return typeof allowedTypes === "object" &&
+					Object.keys(allowedTypes).length
+					? allowedTypes.includes(getType(entry))
+					: true
 			})
 			// sanitize content of webmentions against HTML limit
 			.map((entry) => {
@@ -209,7 +266,9 @@ const getWebmentions = async (options, url, allowedTypes = {}) => {
 				if (html.length) {
 					entry.content = sanitizeHTML(html, options.allowedHTML)
 					if (html.length > options.maximumHtmlLength) {
-						entry.content = `${options.maximumHtmlText} <a href="${getSource(entry)}">${getSource(entry)}</a>`
+						entry.content = `${
+							options.maximumHtmlText
+						} <a href="${getSource(entry)}">${getSource(entry)}</a>`
 					}
 				}
 
@@ -236,13 +295,26 @@ module.exports = (eleventyConfig, options = {}) => {
 
 	if (eleventyConfig) {
 		// Global Data
-		eleventyConfig.addGlobalData("webmentions", filteredWebmentions(options))
+		const filtered = async () => await filteredWebmentions(options)
+		eleventyConfig.addGlobalData("webmentionsByUrl", filtered)
+		const unfiltered = async () =>
+			await filteredWebmentions(options).then((filtered) =>
+				Object.values(filtered).reduce(
+					(array, webmentions) => [...array, ...webmentions],
+					[]
+				)
+			)
+		eleventyConfig.addGlobalData("webmentionsAll", unfiltered)
+		eleventyConfig.addGlobalData("webmentions", unfiltered)
 
 		// Liquid Filter
 		eleventyConfig.addLiquidFilter("getWebmentions", getWebmentionsFilter)
 
 		// Nunjucks Filter
-		eleventyConfig.addNunjucksAsyncFilter("getWebmentions", getWebmentionsFilter)
+		eleventyConfig.addNunjucksAsyncFilter(
+			"getWebmentions",
+			getWebmentionsFilter
+		)
 	}
 
 	return {
