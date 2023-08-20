@@ -1,6 +1,6 @@
 {
   "name": "@chrisburnell/eleventy-cache-webmentions",
-  "version": "1.2.4",
+  "version": "1.2.5",
   "description": "Fetch and cache webmentions using eleventy-fetch.",
   "author": "Chris Burnell <me@chrisburnell.com>",
   "license": "MIT",
@@ -25,7 +25,7 @@
   "dependencies": {
     "@11ty/eleventy-fetch": "^4.0.0",
     "lodash": "^4.17.21",
-    "node-fetch": "^3.3.2",
+    "node-fetch": "^2.6.7",
     "sanitize-html": "^2.11.0"
   },
   "main": "eleventy-cache-webmentions.js",
