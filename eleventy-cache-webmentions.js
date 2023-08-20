@@ -206,9 +206,9 @@ const getWebmentions = async (options, url, allowedTypes = {}) => {
 				const html = getContent(entry)
 
 				if (html.length) {
-					entry.content = sanitizeHTML(html, options.allowedHTML)
+					entry.contentSanitized = sanitizeHTML(html, options.allowedHTML)
 					if (html.length > options.maximumHtmlLength) {
-						entry.content = `${options.maximumHtmlText} <a href="${getSource(entry)}">${getSource(entry)}</a>`
+						entry.contentSanitized = `${options.maximumHtmlText} <a href="${getSource(entry)}">${getSource(entry)}</a>`
 					}
 				}
 
