@@ -101,24 +101,50 @@ const fetchWebmentions = async (options) => {
 	if (!asset.isCacheValid(options.duration)) {
 		const since = webmentions.length ? getPublished(webmentions[0]) : false
 		const url = `${options.feed}${since ? `${options.feed.includes("?") ? "&" : "?"}since=${since}` : ""}`
-		await fetch(url)
-			.then(async (response) => {
-				if (response.ok) {
-					const feed = await response.json()
-					if (feed[options.key].length) {
-						webmentions = uniqBy([...feed[options.key], ...webmentions], (entry) => {
-							return getSource(entry)
+		await fetch(url).then(async (response) => {
+			if (response.ok) {
+				const feed = await response.json()
+				if (feed[options.key].length) {
+					// Process the blocklist, if it has any entries
+					if (options.blocklist.length) {
+						webmentions = webmentions.filter((webmention) => {
+							let sourceUrl = getSource(webmention)
+							for (let url of options.blocklist) {
+								if (sourceUrl.includes(url.replace(/\/?$/, "/"))) {
+									return false
+								}
+							}
+							return true
 						})
-						console.log(`[${hostname(options.domain)}] ${feed[options.key].length} new Webmentions fetched into cache.`)
 					}
-					await asset.save(webmentions, "json")
-					return webmentions
+					// Process the allowlist, if it has any entries
+					if (options.allowlist.length) {
+						webmentions = webmentions.filter((webmention) => {
+							let sourceUrl = getSource(webmention)
+							for (let url of options.allowlist) {
+								if (sourceUrl.includes(url.replace(/\/?$/, "/"))) {
+									return true
+								}
+							}
+							return false
+						})
+					}
+					// Remove duplicates by source URL
+					webmentions = uniqBy([...feed[options.key], ...webmentions], (entry) => {
+						return getSource(entry)
+					})
+					if (webmentions.length) {
+						console.log(`[${hostname(options.domain)}] ${webmentions.length} new Webmentions fetched into cache.`)
+					}
 				}
-				return Promise.reject(response)
-			})
-			.catch((error) => {
-				console.log(`[${hostname(options.domain)}] Something went wrong with your request to ${hostname(options.feed)}!`, error)
-			})
+				await asset.save(webmentions, "json")
+				return webmentions
+			}
+			return Promise.reject(response)
+		})
+		.catch((error) => {
+			console.log(`[${hostname(options.domain)}] Something went wrong with your request to ${hostname(options.feed)}!`, error)
+		})
 	}
 
 	return webmentions
@@ -132,36 +158,6 @@ const filteredWebmentions = async (options) => {
 
 	let rawWebmentions = await fetchWebmentions(options)
 
-	// Process the blocklist, if it has any entries
-	if (options.blocklist.length) {
-		rawWebmentions = rawWebmentions.filter((webmention) => {
-			let sourceUrl = getSource(webmention)
-
-			for (let url of options.blocklist) {
-				if (sourceUrl.includes(url.replace(/\/?$/, "/"))) {
-					return false
-				}
-			}
-
-			return true
-		})
-	}
-
-	// Process the allowlist, if it has any entries
-	if (options.allowlist.length) {
-		rawWebmentions = rawWebmentions.filter((webmention) => {
-			let sourceUrl = getSource(webmention)
-
-			for (let url of options.allowlist) {
-				if (sourceUrl.includes(url.replace(/\/?$/, "/"))) {
-					return true
-				}
-			}
-
-			return false
-		})
-	}
-
 	// Fix local URLs based on urlReplacements and sort Webmentions into groups
 	// by target base URL
 	rawWebmentions.forEach((webmention) => {
@@ -173,13 +169,6 @@ const filteredWebmentions = async (options) => {
 
 		filtered[url].push(webmention)
 	})
-
-	// Remove duplicates by source URL
-	for (let url in filtered) {
-		filtered[url] = uniqBy(filtered[url], (entry) => {
-			return getSource(entry)
-		})
-	}
 
 	const filteredCount = Object.values(filtered).reduce((count, webmentions) => count + webmentions.length, 0)
 	console.log(`[${hostname(options.domain)}] ${filteredCount} filtered Webmentions pulled from cache.`)
@@ -197,11 +186,11 @@ const getWebmentions = async (options, url, allowedTypes = {}) => {
 
 	return (
 		webmentions[url]
-			// filter webmentions by allowed response post types
+			// Filter webmentions by allowed response post types
 			.filter((entry) => {
 				return typeof allowedTypes === "object" && Object.keys(allowedTypes).length ? allowedTypes.includes(getType(entry)) : true
 			})
-			// sanitize content of webmentions against HTML limit
+			// Sanitize content of webmentions against HTML limit
 			.map((entry) => {
 				const html = getContent(entry)
 
@@ -214,7 +203,7 @@ const getWebmentions = async (options, url, allowedTypes = {}) => {
 
 				return entry
 			})
-			// sort by published
+			// Sort by published
 			.sort((a, b) => {
 				return epoch(getPublished(a)) - epoch(getPublished(b))
 			})
