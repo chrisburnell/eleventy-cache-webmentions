@@ -105,6 +105,12 @@ const fetchWebmentions = async (options) => {
 			if (response.ok) {
 				const feed = await response.json()
 				if (feed[options.key].length) {
+					// Combine newly-fetched entries with cached entries
+					webmentions = feed[options.key].concat(webmentions)
+					// Remove duplicates by source URL
+					webmentions = uniqBy([...feed[options.key], ...webmentions], (webmention) => {
+						return getSource(webmention)
+					})
 					// Process the blocklist, if it has any entries
 					if (options.blocklist.length) {
 						webmentions = webmentions.filter((webmention) => {
@@ -129,10 +135,6 @@ const fetchWebmentions = async (options) => {
 							return false
 						})
 					}
-					// Remove duplicates by source URL
-					webmentions = uniqBy([...feed[options.key], ...webmentions], (entry) => {
-						return getSource(entry)
-					})
 					if (webmentions.length) {
 						console.log(`[${hostname(options.domain)}] ${webmentions.length} new Webmentions fetched into cache.`)
 					}
