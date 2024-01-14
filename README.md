@@ -2,6 +2,22 @@
 
 > Cache webmentions using eleventy-fetch and make them available to use in collections, layouts, pages, etc. in Eleventy.
 
+## Breaking change for v2.0.0
+
+Version 2.0.0 introduces a breaking change for those migrating from earlier versions of the plugin. This affects usage of the plugin from JavaScript files; specifically, you will need to make a small change to the way that you require() the plugin by removing an extra set of parentheses:
+
+**v1.2.5 and below**
+
+```javascript
+require("@chrisburnell/eleventy-cache-webmentions")()
+```
+
+**v2.0.0**
+
+```javascript
+require("@chrisburnell/eleventy-cache-webmentions")
+```
+
 ## Quick Guide
 
 I wrote a quicker and simpler guide to getting this Eleventy plugin working that cuts out all the fluff and extra details.
