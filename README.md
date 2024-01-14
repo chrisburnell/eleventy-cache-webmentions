@@ -1,37 +1,37 @@
 # eleventy-cache-webmentions
 
-> Cache webmentions using eleventy-fetch and make them available to use in collections, templates, pages, etc. in Eleventy.
+> Cache webmentions using eleventy-fetch and make them available to use in collections, layouts, pages, etc. in Eleventy.
 
 ## Quick Guide
 
-I wrote a quicker and simpler guide to getting this Eleventy plugin working that cuts out all the fluff and extra details. You can read about it here: [Webmention Setup for Eleventy](https://chrisburnell.com/article/webmention-eleventy-setup/).
+I wrote a quicker and simpler guide to getting this Eleventy plugin working that cuts out all the fluff and extra details.
+
+Check it out: [Webmention Setup for Eleventy](https://chrisburnell.com/article/webmention-eleventy-setup/).
 
 ## Installation
 
 -   **With npm:** `npm install @chrisburnell/eleventy-cache-webmentions`
 -   **Direct download:** [https://github.com/chrisburnell/eleventy-cache-webmentions/archive/master.zip](https://github.com/chrisburnell/eleventy-cache-webmentions/archive/master.zip)
 
-Once installed there are **two** more **required** set-up steps:
-
-### Add it to your config
-
-Inside your Eleventy config file (typically `.eleventy.js`), use `addPlugin`:
+Inside your Eleventy config file, use `addPlugin()` to add it to your project:
 
 ```javascript
 const pluginWebmentions = require("@chrisburnell/eleventy-cache-webmentions")
 
-module.exports = function (eleventyConfig) {
-    eleventyConfig.addPlugin(pluginWebmentions, {
-        // these 3 fields are all required!
-        domain: "https://example.com",
-        feed: "https://webmentions.example.com?token=S3cr3tT0k3n",
-        key: "children",
-    })
+module.exports = function(eleventyConfig) {
+	eleventyConfig.addPlugin(pluginWebmentions, {
+		// These 3 fields are all required!
+		domain: "https://example.com",
+		feed: "https://webmentions.example.com?token=S3cr3tT0k3n",
+		key: "array_of_webmentions"
+	})
 }
 ```
 
-## Options
+Make sure you get the correct values for this configuration. Check below for both Webmention.io configuration and go-jamming configuration.
 
+<details>
+<summary>Full options list</summary>
 <table>
     <thead>
         <tr>
@@ -116,124 +116,193 @@ module.exports = function (eleventyConfig) {
         </tr>
     </tbody>
 </table>
+</details>
 
-Advanced control over how the Webmentions are cached and processed is done by passing `options` into the plugin when using `addPlugin`:
+## Usage
+
+`eleventy-cache-webmentions` comes with a number of ways of accessing your Webmentions as [Global Data](https://www.11ty.dev/docs/data-global-custom/) in both JavaScript and Liquid/Nunjucks as well as a series of [Eleventy Filters](https://www.11ty.dev/docs/filters/) and JavaScript Functions for filtering, sorting, and reading properties about each Webmention:
+
+### Global Data
+
+<details>
+<summary>JavaScript</summary>
 
 ```javascript
-const pluginWebmentions = require("@chrisburnell/eleventy-cache-webmentions")
+const {
+	defaults, // default options for the plugin
+	webmentionsByUrl, // Object containing Arrays of Webmentions by URL
+} = require("@chrisburnell/eleventy-cache-webmentions")
+```
 
-module.exports = function (eleventyConfig) {
-    eleventyConfig.addPlugin(pluginWebmentions, {
-        domain: "https://example.com",
-        feed: "https://webmentions.example.com?token=S3cr3tT0k3n",
-        key: "children",
-        directory: ".cache",
-        duration: "1d",
-        uniqueKey: "webmentions",
-        allowedHTML: {
-            allowedTags: ["b", "i", "em", "strong", "a"],
-            allowedAttributes: {
-                a: ["href"],
-            },
-        },
-        allowlist: [],
-        blocklist: [],
-        urlReplacements: {},
-        maximumHtmlLength: 2000,
-        maximumHtmlText: "mentioned this in",
-    })
+</details>
+
+<details>
+<summary>Liquid / Nunjucks</summary>
+
+```twig
+{# default options for the plugin #}
+{{ webmentionsDefaults }}
+{# Object containing Arrays of Webmentions by URL #}
+{{ webmentionsByUrl }}
+```
+
+</details>
+
+### Filters
+
+<details>
+<summary>JavaScript</summary>
+
+```javascript
+const {
+	getWebmentions, // get Array of Webmentions for a given URL
+	getByTypes, // filter Webmentions by their response type
+	getPublished, // get received/published time of a Webmention
+	getContent, // get content of a Webmention
+	getSource, // get source URL of a Webmention (where it's from)
+	getTarget, // get target URL of a Webmention (where it's sent to)
+	getType, // get response type of a Webmention
+} = require("@chrisburnell/eleventy-cache-webmentions")
+
+// This is NOT the best way to get Webmentions!
+// See "Attach Webmentions to Pages using Directory Data" below.
+const webmentions = getWebmentions({
+	domain: "https://example.com",
+	feed: "https://webmentions.example.com?token=S3cr3tT0k3n",
+	key: "array_of_webmentions"
+}, "https://example.com/specific-page/")
+
+const responsesOnly = getByTypes(webmentions, ['mention-of', 'in-reply-to'])
+
+webmentions.forEach((webmention) => {
+	const published = getPublished(webmention)
+	const content = getContent(webmention)
+	const source = getSource(webmention)
+	const target = getTarget(webmention)
+	const type = getType(webmention)
+})
+```
+
+</details>
+
+<details>
+<summary>Liquid / Nunjucks</summary>
+
+```twig
+{# get Array of Webmentions for a given URL #}
+{% set webmentions = ("https://example.com" + page.url) | getWebmentions %}
+
+{# filter Webmentions by their response type #}
+{{ set responses = webmentions | getWebmentionsByTypes(['mention-of', 'in-reply-to']) }}
+
+{% for webmention in webmentions %}
+    {# get received/published time of a Webmention #}
+    {{ webmentions | getWebmentionPublished }}
+    {# get content of a Webmention #}
+    {{ webmentions | getWebmentionContent }}
+    {# get source URL of a Webmention (where it's from) #}
+    {{ webmentions | getWebmentionSource }}
+    {# get target URL of a Webmention (where it's sent to) #}
+    {{ webmentions | getWebmentionTarget }}
+    {# get response type of a Webmention #}
+    {{ webmentions | getWebmentionType }}
+{% endfor %}
+```
+
+</details>
+
+## Attach Webmentions to Pages using Directory Data
+
+Using [Eleventy’s Data Cascade](https://www.11ty.dev/docs/data-cascade/), you can attach Webmentions to each page by using [Directory Specific Data Files](https://www.11ty.dev/docs/data-template-dir/).
+
+For example, if you have a folder, `/pages/`, and want to attach Webmentions to each page, create or add the following to a `pages.11tydata.js` file within the folder:
+
+```javascript
+const { getWebmentions, getPublished } = require("@chrisburnell/eleventy-cache-webmentions")
+
+module.exports = {
+	eleventyComputed: {
+		webmentions: (data) => {
+			// Get this page's Webmentions as an Array (based on the URL)
+			const webmentionsForUrl = getWebmentions({
+				domain: "https://example.com",
+				feed: "https://webmentions.example.com?token=S3cr3tT0k3n",
+				key: "array_of_webmentions"
+			}, "https://example.com" + data.page.url)
+
+			// If there are Webmentions for this page
+			if (webmentionsForUrl.length) {
+				// Sort them (based on when they were received/published)
+				return webmentionsForUrl.sort((a, b) => {
+					return getPublished(b) - getPublished(a)
+				})
+			}
+			// Otherwise, return an empty Array
+			return []
+		},
+	},
 }
 ```
 
-## JavaScript Usage
+This attaches an Array containing Webmentions to each page (based on its URL). You can then access this Array of Webmentions with the variable, <samp>webmentions</samp>, within a [Layout](https://www.11ty.dev/docs/layouts/), [Include](https://www.11ty.dev/docs/includes/), or from the page itself:
 
-Accessing the plugin in JavaScript in the way shown below will give you an Object containing your cached Webmentions organised in key:value pairs where the key is a URL on your domain and the value is an array of data for Webmentions sent to that URL.
-
-```javascript
-const Webmentions = require("@chrisburnell/eleventy-cache-webmentions")(null, {
-    domain: "https://example.com",
-    feed: "https://webmentions.example.com?token=S3cr3tT0k3n",
-    key: "children",
-})
-
-const webmentionsByUrl = await Webmentions()
+```twig
+{% for webmention in webmentions %}
+    {# Do something with each Webmention #}
+{% endfor %}
 ```
 
-This can prove to be very useful when building out your pages. Using [Eleventy’s Data Cascade](https://www.11ty.dev/docs/data-cascade/), we can attach Webmentions to each page by using [Directory Specific Data Files](https://www.11ty.dev/docs/data-template-dir/):
-
-```javascript
-const Webmentions = require("@chrisburnell/eleventy-cache-webmentions")(null, {
-    domain: "https://example.com",
-    feed: "https://webmentions.example.com?token=S3cr3tT0k3n",
-    key: "children",
-})
-
-module.exports = async () => {
-    const webmentionsByUrl = await Webmentions()
-
-    return {
-        eleventyComputed: {
-            webmentions: (data) => {
-                const webmentionsForUrl = webmentionsByUrl["https://example.com" + data.page.url] || []
-
-                if (webmentionsForUrl.length) {
-                    return webmentionsForUrl.sort((a, b) => {
-                        return (b.data.published || b.verified_date) - (a.data.published || a.verified_date)
-                    })
-                }
-                return []
-            },
-        },
-    }
-}
-```
-
-You can now use this data in a number of useful ways, not limited to things like creating a collection of pages ordered by number of Webmentions:
+These Arrays of Webmentions can even be accessed when building [Collections](https://www.11ty.dev/docs/collections/), allowing you to create a Collection of pages sorted by their number of Webmentions, for example:
 
 ```javascript
 module.exports = (eleventyConfig) => {
-    eleventyConfig.addCollection("popular", (collection) => {
-        return collection.sort((a, b) => {
-            return b.data.webmentions.length - a.data.webmentions.length
-        })
-    })
+	eleventyConfig.addCollection("popular", (collection) => {
+		return collection
+			.sort((a, b) => {
+				return b.data.webmentions.length - a.data.webmentions.length
+			})
+	})
 }
 ```
 
-## Liquid/Nunjucks Usage
+## Without Directory Data
 
-Accessing the plugin in Liquid/Nunjucks by using a Filter and passing in a URL in the way shown below will give you an Array containing the cached Webmentions for the given URL.
-
-```twig
-{% raw %}{% set responses = webmentions %}{% endraw %}
-```
-
-**OR**
+If you would rather get Webmentions for a given page directly from a Layout/Include/Page itself, you can do so using the Filter, `getWebmentions`:
 
 ```twig
-{% raw %}{% set responses = page.url | getWebmentions %}{% endraw %}
-```
-
-You can get back only specific [response post types](https://indieweb.org/responses#Response_Post_Types) by passing a second argument:
-
-```twig
-{% raw %}{% set reactions = page.url | getWebmentions(['like-of', 'repost-of', 'bookmark-of']) %}
-{% set replies = page.url | getWebmentions(['mention-of', 'in-reply-to']) %}{% endraw %}
-```
-
-And, if you need it, the entire Object of sorted Webmentions is available too:
-
-```twig
-{% raw %}{% set count = 0 %}
-{% for url, array in webmentionsAll %}
-    {% set count = array.length + count %}
+{% set webmentions = ("https://example.com" + page.url) | getWebmentions %}
+{% for webmention in webmentions %}
+    ...
 {% endfor %}
-<p>This site has received {{ count }} Webmentions!</p>{% endraw %}
 ```
 
-<h2 id="webmention-io">Webmention.io</h2>
+## Get specific types of Webmentions
 
-[Webmention.io](https://webmention.io) is a in-place Webmention receiver solution that you can use by authenticating yourself via [IndieAuth](https://indieauth.com/) (or host it yourself), and, like so much other publically-available IndieWeb software, is built and hosted by [Aaron Parecki](https://aaronparecki.com/).
+Instead of getting all the Webmentions for a given page, you may want to grab only certain types of Webmentions. This is useful if you want to display different types of Webmentions separately, e.g.:
+
+```twig
+{% set bookmarks = webmentions | getTypes(['bookmark-of']) %}
+{% set likes = webmentions | getTypes(['like-of']) %}
+{% set reposts = webmentions | getTypes(['repost-of']) %}
+
+{% set replies = webmentions | getTypes(['mention-of', 'in-reply-to']) %}
+```
+
+## Get all Webmentions at once
+
+If you need it, the plugin also makes available an Object containing your cached Webmentions organised in key:value pairs, where each key is a full URL on your website and its value is an Array of Webmentions sent to that URL:
+
+```twig
+{% set count = 0 %}
+{% for url, array in webmentionsByUrl %}
+	{% set count = array.length + count %}
+{% endfor %}
+<p>This website has received {{ count }} Webmentions!</p>
+```
+
+## Webmention.io
+
+[Webmention.io](https://webmention.io) is a in-place Webmention receiver solution that you can use by authenticating yourself via [IndieAuth](https://indieauth.com/) (or host it yourself), and, like *so much* other publicly-available IndieWeb software, is built and hosted by [Aaron Parecki](https://aaronparecki.com/).
 
 ### Add your token
 
@@ -245,17 +314,23 @@ WEBMENTION_IO_TOKEN=njJql0lKXnotreal4x3Wmd
 
 ### Set your feed and key config options
 
+The example below requests the [JF2](https://www.w3.org/TR/jf2/) file format, which I highly recommend using; although, there is a JSON format available from [Webmention.io](https://webmention.io) as well. The [official documentation](https://github.com/aaronpk/webmention.io) has more information on how to use these two formats.
+
+The key difference between the two feed formats is in the *naming* of the keys: the JF2 format holds the array of Webmentions in the `children` key, whereas the JSON format holds them in the `links` key. The JF2 format, however, provides keys and values that more tightly-align with [microformats](https://indieweb.org/microformats), the method I recommend the most for marking up HTML such that it can be consumed and understood by <q>search engines, aggregators, and other tools</q> across the Indieweb.
+
 ```javascript
 const pluginWebmentions = require("@chrisburnell/eleventy-cache-webmentions")
 
-module.exports = function (eleventyConfig) {
-    eleventyConfig.addPlugin(pluginWebmentions, {
-        domain: "https://example.com",
-        feed: `https://webmention.io/api/mentions.jf2?domain=example.com&per-page=9001&token=${process.env.WEBMENTION_IO_TOKEN}`,
-        key: "children",
-    })
+module.exports = function(eleventyConfig) {
+	eleventyConfig.addPlugin(pluginWebmentions, {
+		domain: "https://example.com",
+		feed: `https://webmention.io/api/mentions.jf2?domain=example.com&per-page=9001&token=${process.env.WEBMENTION_IO_TOKEN}`,
+		key: "children"
+	})
 }
 ```
+
+If you want to use the JSON format instead, make sure that you replace `mentions.jf2` in the URL with `mentions.json` and change the value of the key from `children` to `links`.
 
 ## go-jamming
 
@@ -263,7 +338,7 @@ module.exports = function (eleventyConfig) {
 
 ### Add your token
 
-Once you’ve set up your _go-jamming_ server and you’ve defined your token, you’ll need add it to your project as an environment variable, i.e. in a `.env` file in the root of your project:
+Once you’ve set up your *go-jamming* server and you’ve defined your token, you’ll need add it to your project as an environment variable, i.e. in a `.env` file in the root of your project:
 
 ```text
 GO_JAMMING_TOKEN=njJql0lKXnotreal4x3Wmd
@@ -274,12 +349,12 @@ GO_JAMMING_TOKEN=njJql0lKXnotreal4x3Wmd
 ```javascript
 const pluginWebmentions = require("@chrisburnell/eleventy-cache-webmentions")
 
-module.exports = function (eleventyConfig) {
-    eleventyConfig.addPlugin(pluginWebmentions, {
-        domain: "https://example.com",
-        feed: `https://jam.example.com/webmention/example.com/${process.env.GO_JAMMING_TOKEN}`,
-        key: "json",
-    })
+module.exports = function(eleventyConfig) {
+	eleventyConfig.addPlugin(pluginWebmentions, {
+		domain: "https://example.com",
+		feed: `https://jam.example.com/webmention/example.com/${process.env.GO_JAMMING_TOKEN}`,
+		key: "json"
+	})
 }
 ```
 

@@ -1,7 +1,7 @@
 {
   "name": "@chrisburnell/eleventy-cache-webmentions",
-  "version": "1.2.6-rc.2",
-  "description": "Fetch and cache webmentions using eleventy-fetch.",
+  "version": "2.0.0",
+  "description": "Cache webmentions using eleventy-fetch and make them available to use in collections, layouts, pages, etc. in Eleventy.",
   "author": "Chris Burnell <me@chrisburnell.com>",
   "license": "MIT",
   "repository": {
@@ -20,7 +20,7 @@
     "webmention"
   ],
   "devDependencies": {
-    "eslint": "^8.47.0"
+    "eslint": "^8.56.0"
   },
   "dependencies": {
     "@11ty/eleventy-fetch": "^4.0.0",

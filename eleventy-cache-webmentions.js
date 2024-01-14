@@ -38,7 +38,7 @@ const epoch = (value) => {
 }
 
 const getPublished = (webmention) => {
-	return webmention["wm-received"] || webmention?.["data"]["published"] || webmention["verified_date"] || webmention["published"]
+	return webmention?.["data"]?.["published"] || webmention["published"] || webmention["wm-received"] || webmention["verified_date"]
 }
 
 const getContent = (webmention) => {
@@ -46,7 +46,7 @@ const getContent = (webmention) => {
 }
 
 const getSource = (webmention) => {
-	return webmention["url"] || webmention?.["data"]["url"] || webmention["wm-source"] || webmention["source"]
+	return webmention?.["data"]?.["url"] || webmention["url"] || webmention["wm-source"] || webmention["source"]
 }
 
 const getTarget = (webmention) => {
@@ -54,7 +54,13 @@ const getTarget = (webmention) => {
 }
 
 const getType = (webmention) => {
-	return webmention["wm-property"] || webmention?.["activity"]["type"] || webmention["type"]
+	return webmention["wm-property"] || webmention?.["activity"]?.["type"] || webmention["type"]
+}
+
+const getByTypes = (webmentions, allowedTypes) => {
+	return webmentions.filter((webmention) => {
+		return allowedTypes.includes(getType(webmention))
+	})
 }
 
 const defaults = {
@@ -97,15 +103,17 @@ const fetchWebmentions = async (options) => {
 	}
 
 	// If there is a cached file but it is outside of expiry, fetch fresh
-	// results since the most recent webmention
+	// results since the most recent Webmention
 	if (!asset.isCacheValid(options.duration)) {
+		// Get the published date of the most recent Webmention, if it exists
 		const since = webmentions.length ? getPublished(webmentions[0]) : false
+		// Build the URL for the fetch request
 		const url = `${options.feed}${since ? `${options.feed.includes("?") ? "&" : "?"}since=${since}` : ""}`
 		await fetch(url).then(async (response) => {
 			if (response.ok) {
 				const feed = await response.json()
 				if (feed[options.key].length) {
-					// Combine newly-fetched entries with cached entries
+					// Combine newly-fetched Webmentions with cached Webmentions
 					webmentions = feed[options.key].concat(webmentions)
 					// Remove duplicates by source URL
 					webmentions = uniqBy([...feed[options.key], ...webmentions], (webmention) => {
@@ -172,9 +180,6 @@ const filteredWebmentions = async (options) => {
 		filtered[url].push(webmention)
 	})
 
-	const filteredCount = Object.values(filtered).reduce((count, webmentions) => count + webmentions.length, 0)
-	console.log(`[${hostname(options.domain)}] ${filteredCount} filtered Webmentions pulled from cache.`)
-
 	return filtered
 }
 
@@ -221,28 +226,44 @@ const getWebmentionsFilter = async (options, url, allowedTypes, callback) => {
 	callback(null, webmentions)
 }
 
-module.exports = (eleventyConfig, options = {}) => {
+const eleventyCacheWebmentions = (eleventyConfig, options = {}) => {
 	options = Object.assign(defaults, options)
 
-	if (eleventyConfig) {
-		// Global Data
-		const filtered = async () => await filteredWebmentions(options)
-		eleventyConfig.addGlobalData("webmentionsByUrl", filtered)
-		const unfiltered = async () => await filteredWebmentions(options).then((filtered) => Object.values(filtered).reduce((array, webmentions) => [...array, ...webmentions], []))
-		eleventyConfig.addGlobalData("webmentionsAll", unfiltered)
-		eleventyConfig.addGlobalData("webmentions", unfiltered)
+	// Global Data
+	eleventyConfig.addGlobalData("webmentionsDefaults", defaults)
+	const filtered = async () => await filteredWebmentions(options)
+	eleventyConfig.addGlobalData("webmentionsByUrl", filtered)
+	const unfiltered = async () => await filteredWebmentions(options).then((filtered) => Object.values(filtered).reduce((array, webmentions) => [...array, ...webmentions], []))
+	eleventyConfig.addGlobalData("webmentionsAll", unfiltered)
 
-		// Liquid Filter
-		eleventyConfig.addLiquidFilter("getWebmentions", getWebmentionsFilter)
+	// Liquid Filters
+	eleventyConfig.addLiquidFilter("getWebmentions", getWebmentionsFilter)
+	eleventyConfig.addLiquidFilter("getWebmentionPublished", getPublished)
+	eleventyConfig.addLiquidFilter("getWebmentionContent", getContent)
+	eleventyConfig.addLiquidFilter("getWebmentionSource", getSource)
+	eleventyConfig.addLiquidFilter("getWebmentionTarget", getTarget)
+	eleventyConfig.addLiquidFilter("getWebmentionType", getType)
+	eleventyConfig.addLiquidFilter("getWebmentionsByTypes", getByTypes)
 
-		// Nunjucks Filter
-		eleventyConfig.addNunjucksAsyncFilter("getWebmentions", getWebmentionsFilter)
-	}
-
-	return {
-		defaults: defaults,
-		fetchWebmentions: fetchWebmentions,
-		filteredWebmentions: filteredWebmentions,
-		getWebmentions: getWebmentions,
-	}
+	// Nunjucks Filters
+	eleventyConfig.addNunjucksAsyncFilter("getWebmentions", getWebmentionsFilter)
+	eleventyConfig.addNunjucksFilter("getWebmentionsByTypes", getByTypes)
+	eleventyConfig.addNunjucksFilter("getWebmentionPublished", getPublished)
+	eleventyConfig.addNunjucksFilter("getWebmentionContent", getContent)
+	eleventyConfig.addNunjucksFilter("getWebmentionSource", getSource)
+	eleventyConfig.addNunjucksFilter("getWebmentionTarget", getTarget)
+	eleventyConfig.addNunjucksFilter("getWebmentionType", getType)
 }
+
+module.exports = eleventyCacheWebmentions
+module.exports.defaults = defaults
+module.exports.filteredWebmentions = filteredWebmentions
+module.exports.webmentionsByUrl = filteredWebmentions
+module.exports.fetchWebmentions = fetchWebmentions
+module.exports.getWebmentions = getWebmentions
+module.exports.getByTypes = getByTypes
+module.exports.getPublished = getPublished
+module.exports.getContent = getContent
+module.exports.getSource = getSource
+module.exports.getTarget = getTarget
+module.exports.getType = getType
