@@ -42,7 +42,7 @@ const getPublished = (webmention) => {
 }
 
 const getContent = (webmention) => {
-	return webmention?.["content"]?.["html"] || webmention?.["content"] || webmention?.["data"]?.["content"] || ""
+	return webmention?.["contentSanitized"] || webmention?.["content"]?.["html"] || webmention?.["content"]?.["value"] || webmention?.["content"] || webmention?.["data"]?.["content"] || ""
 }
 
 const getSource = (webmention) => {
