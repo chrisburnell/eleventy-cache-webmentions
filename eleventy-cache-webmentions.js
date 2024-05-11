@@ -109,52 +109,53 @@ const fetchWebmentions = async (options) => {
 		const since = webmentions.length ? getPublished(webmentions[0]) : false
 		// Build the URL for the fetch request
 		const url = `${options.feed}${since ? `${options.feed.includes("?") ? "&" : "?"}since=${since}` : ""}`
-		await fetch(url).then(async (response) => {
-			if (response.ok) {
-				const feed = await response.json()
-				if (feed[options.key].length) {
-					// Combine newly-fetched Webmentions with cached Webmentions
-					webmentions = feed[options.key].concat(webmentions)
-					// Remove duplicates by source URL
-					webmentions = uniqBy([...feed[options.key], ...webmentions], (webmention) => {
-						return getSource(webmention)
-					})
-					// Process the blocklist, if it has any entries
-					if (options.blocklist.length) {
-						webmentions = webmentions.filter((webmention) => {
-							let sourceUrl = getSource(webmention)
-							for (let url of options.blocklist) {
-								if (sourceUrl.includes(url.replace(/\/?$/, "/"))) {
-									return false
-								}
-							}
-							return true
+		await fetch(url)
+			.then(async (response) => {
+				if (response.ok) {
+					const feed = await response.json()
+					if (feed[options.key].length) {
+						// Combine newly-fetched Webmentions with cached Webmentions
+						webmentions = feed[options.key].concat(webmentions)
+						// Remove duplicates by source URL
+						webmentions = uniqBy([...feed[options.key], ...webmentions], (webmention) => {
+							return getSource(webmention)
 						})
-					}
-					// Process the allowlist, if it has any entries
-					if (options.allowlist.length) {
-						webmentions = webmentions.filter((webmention) => {
-							let sourceUrl = getSource(webmention)
-							for (let url of options.allowlist) {
-								if (sourceUrl.includes(url.replace(/\/?$/, "/"))) {
-									return true
+						// Process the blocklist, if it has any entries
+						if (options.blocklist.length) {
+							webmentions = webmentions.filter((webmention) => {
+								let sourceUrl = getSource(webmention)
+								for (let url of options.blocklist) {
+									if (sourceUrl.includes(url.replace(/\/?$/, "/"))) {
+										return false
+									}
 								}
-							}
-							return false
-						})
+								return true
+							})
+						}
+						// Process the allowlist, if it has any entries
+						if (options.allowlist.length) {
+							webmentions = webmentions.filter((webmention) => {
+								let sourceUrl = getSource(webmention)
+								for (let url of options.allowlist) {
+									if (sourceUrl.includes(url.replace(/\/?$/, "/"))) {
+										return true
+									}
+								}
+								return false
+							})
+						}
+						if (webmentions.length) {
+							console.log(`[${hostname(options.domain)}] ${webmentions.length} new Webmentions fetched into cache.`)
+						}
 					}
-					if (webmentions.length) {
-						console.log(`[${hostname(options.domain)}] ${webmentions.length} new Webmentions fetched into cache.`)
-					}
+					await asset.save(webmentions, "json")
+					return webmentions
 				}
-				await asset.save(webmentions, "json")
-				return webmentions
-			}
-			return Promise.reject(response)
-		})
-		.catch((error) => {
-			console.log(`[${hostname(options.domain)}] Something went wrong with your request to ${hostname(options.feed)}!`, error)
-		})
+				return Promise.reject(response)
+			})
+			.catch((error) => {
+				console.log(`[${hostname(options.domain)}] Something went wrong with your request to ${hostname(options.feed)}!`, error)
+			})
 	}
 
 	return webmentions
@@ -238,12 +239,12 @@ const eleventyCacheWebmentions = (eleventyConfig, options = {}) => {
 
 	// Liquid Filters
 	eleventyConfig.addLiquidFilter("getWebmentions", getWebmentionsFilter)
+	eleventyConfig.addLiquidFilter("getWebmentionsByTypes", getByTypes)
 	eleventyConfig.addLiquidFilter("getWebmentionPublished", getPublished)
 	eleventyConfig.addLiquidFilter("getWebmentionContent", getContent)
 	eleventyConfig.addLiquidFilter("getWebmentionSource", getSource)
 	eleventyConfig.addLiquidFilter("getWebmentionTarget", getTarget)
 	eleventyConfig.addLiquidFilter("getWebmentionType", getType)
-	eleventyConfig.addLiquidFilter("getWebmentionsByTypes", getByTypes)
 
 	// Nunjucks Filters
 	eleventyConfig.addNunjucksAsyncFilter("getWebmentions", getWebmentionsFilter)
@@ -262,8 +263,14 @@ module.exports.webmentionsByUrl = filteredWebmentions
 module.exports.fetchWebmentions = fetchWebmentions
 module.exports.getWebmentions = getWebmentions
 module.exports.getByTypes = getByTypes
+module.exports.getWebmentionsByTypes = getByTypes
 module.exports.getPublished = getPublished
+module.exports.getWebmentionPublished = getPublished
 module.exports.getContent = getContent
+module.exports.getWebmentionContent = getContent
 module.exports.getSource = getSource
+module.exports.getWebmentionSource = getSource
 module.exports.getTarget = getTarget
+module.exports.getWebmentionTarget = getTarget
 module.exports.getType = getType
+module.exports.getWebmentionType = getType

@@ -297,11 +297,11 @@ If you would rather get Webmentions for a given page directly from a Layout/Incl
 Instead of getting all the Webmentions for a given page, you may want to grab only certain types of Webmentions. This is useful if you want to display different types of Webmentions separately, e.g.:
 
 ```twig
-{% set bookmarks = webmentions | getTypes(['bookmark-of']) %}
-{% set likes = webmentions | getTypes(['like-of']) %}
-{% set reposts = webmentions | getTypes(['repost-of']) %}
+{% set bookmarks = webmentions | getWebmentionsByTypes(['bookmark-of']) %}
+{% set likes = webmentions | getWebmentionsByTypes(['like-of']) %}
+{% set reposts = webmentions | getWebmentionsByTypes(['repost-of']) %}
 
-{% set replies = webmentions | getTypes(['mention-of', 'in-reply-to']) %}
+{% set replies = webmentions | getWebmentionsByTypes(['mention-of', 'in-reply-to']) %}
 ```
 
 ## Get all Webmentions at once
