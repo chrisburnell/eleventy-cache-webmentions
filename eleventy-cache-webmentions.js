@@ -121,7 +121,6 @@ const fetchWebmentions = async (options) => {
 			.then(async (response) => {
 				if (response.ok) {
 					const feed = await response.json()
-
 					if (feed[options.key].length) {
 						// Combine newly-fetched Webmentions with cached Webmentions
 						webmentions = feed[options.key].concat(webmentions)
