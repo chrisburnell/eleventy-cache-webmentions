@@ -41,6 +41,10 @@ const getPublished = (webmention) => {
 	return webmention?.["data"]?.["published"] || webmention["published"] || webmention["wm-received"] || webmention["verified_date"]
 }
 
+const getReceived = (webmention) => {
+	return webmention["wm-received"] || webmention["verified_date"] || webmention?.["data"]?.["published"] || webmention["published"]
+}
+
 const getContent = (webmention) => {
 	return webmention?.["contentSanitized"] || webmention?.["content"]?.["html"] || webmention?.["content"]?.["value"] || webmention?.["content"] || webmention?.["data"]?.["content"] || ""
 }
@@ -81,15 +85,15 @@ const defaults = {
 
 const fetchWebmentions = async (options) => {
 	if (!options.domain) {
-		throw new Error("domain is a required field when attempting to retrieve Webmentions. See https://www.npmjs.com/package/@chrisburnell/eleventy-cache-webmentions#installation for more information.")
+		throw new Error("`domain` is a required field when attempting to retrieve Webmentions. See https://www.npmjs.com/package/@chrisburnell/eleventy-cache-webmentions#installation for more information.")
 	}
 
 	if (!options.feed) {
-		throw new Error("feed is a required field when attempting to retrieve Webmentions. See https://www.npmjs.com/package/@chrisburnell/eleventy-cache-webmentions#installation for more information.")
+		throw new Error("`feed` is a required field when attempting to retrieve Webmentions. See https://www.npmjs.com/package/@chrisburnell/eleventy-cache-webmentions#installation for more information.")
 	}
 
 	if (!options.key) {
-		throw new Error("key is a required field when attempting to retrieve Webmentions. See https://www.npmjs.com/package/@chrisburnell/eleventy-cache-webmentions#installation for more information.")
+		throw new Error("`key` is a required field when attempting to retrieve Webmentions. See https://www.npmjs.com/package/@chrisburnell/eleventy-cache-webmentions#installation for more information.")
 	}
 
 	let asset = new AssetCache(options.uniqueKey, options.directory)
@@ -102,17 +106,22 @@ const fetchWebmentions = async (options) => {
 		webmentions = await asset.getCachedValue()
 	}
 
+	// Get the number of cached Webmentions for diffing against fetched
+	// Webmentions later
+	const webmentionsCachedLength = webmentions.length
+
 	// If there is a cached file but it is outside of expiry, fetch fresh
 	// results since the most recent Webmention
 	if (!asset.isCacheValid(options.duration)) {
-		// Get the published date of the most recent Webmention, if it exists
-		const since = webmentions.length ? getPublished(webmentions[0]) : false
+		// Get the received date of the most recent Webmention, if it exists
+		const since = webmentions.length ? getReceived(webmentions[0]) : false
 		// Build the URL for the fetch request
 		const url = `${options.feed}${since ? `${options.feed.includes("?") ? "&" : "?"}since=${since}` : ""}`
 		await fetch(url)
 			.then(async (response) => {
 				if (response.ok) {
 					const feed = await response.json()
+
 					if (feed[options.key].length) {
 						// Combine newly-fetched Webmentions with cached Webmentions
 						webmentions = feed[options.key].concat(webmentions)
@@ -144,8 +153,13 @@ const fetchWebmentions = async (options) => {
 								return false
 							})
 						}
-						if (webmentions.length) {
-							console.log(`[${hostname(options.domain)}] ${webmentions.length} new Webmentions fetched into cache.`)
+						// Sort webmentions by received date for getting most recent Webmention on subsequent requests
+						webmentions = webmentions.sort((a, b) => {
+							return epoch(getReceived(b)) - epoch(getReceived(a))
+						})
+						// Add a console message with the number of fetched and processed Webmentions, if any
+						if (webmentionsCachedLength < webmentions.length) {
+							console.log(`[${hostname(options.domain)}] ${webmentions.length - webmentionsCachedLength} new Webmentions fetched into cache.`)
 						}
 					}
 					await asset.save(webmentions, "json")
@@ -241,6 +255,7 @@ const eleventyCacheWebmentions = (eleventyConfig, options = {}) => {
 	eleventyConfig.addLiquidFilter("getWebmentions", getWebmentionsFilter)
 	eleventyConfig.addLiquidFilter("getWebmentionsByTypes", getByTypes)
 	eleventyConfig.addLiquidFilter("getWebmentionPublished", getPublished)
+	eleventyConfig.addLiquidFilter("getWebmentionReceived", getReceived)
 	eleventyConfig.addLiquidFilter("getWebmentionContent", getContent)
 	eleventyConfig.addLiquidFilter("getWebmentionSource", getSource)
 	eleventyConfig.addLiquidFilter("getWebmentionTarget", getTarget)
@@ -250,6 +265,7 @@ const eleventyCacheWebmentions = (eleventyConfig, options = {}) => {
 	eleventyConfig.addNunjucksAsyncFilter("getWebmentions", getWebmentionsFilter)
 	eleventyConfig.addNunjucksFilter("getWebmentionsByTypes", getByTypes)
 	eleventyConfig.addNunjucksFilter("getWebmentionPublished", getPublished)
+	eleventyConfig.addNunjucksFilter("getWebmentionReceived", getReceived)
 	eleventyConfig.addNunjucksFilter("getWebmentionContent", getContent)
 	eleventyConfig.addNunjucksFilter("getWebmentionSource", getSource)
 	eleventyConfig.addNunjucksFilter("getWebmentionTarget", getTarget)
@@ -266,6 +282,8 @@ module.exports.getByTypes = getByTypes
 module.exports.getWebmentionsByTypes = getByTypes
 module.exports.getPublished = getPublished
 module.exports.getWebmentionPublished = getPublished
+module.exports.getReceived = getReceived
+module.exports.getWebmentionReceived = getReceived
 module.exports.getContent = getContent
 module.exports.getWebmentionContent = getContent
 module.exports.getSource = getSource
