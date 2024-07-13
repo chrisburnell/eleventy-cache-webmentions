@@ -83,6 +83,59 @@ const defaults = {
 	maximumHtmlText: "mentioned this in",
 }
 
+const performFetch = async (options, webmentions, url) => {
+	return await fetch(url)
+		.then(async (response) => {
+			if (response.ok) {
+				const feed = await response.json()
+				if (feed[options.key].length) {
+					// Combine newly-fetched Webmentions with cached Webmentions
+					webmentions = feed[options.key].concat(webmentions)
+					// Remove duplicates by source URL
+					webmentions = uniqBy([...feed[options.key], ...webmentions], (webmention) => {
+						return getSource(webmention)
+					})
+					// Process the blocklist, if it has any entries
+					if (options.blocklist.length) {
+						webmentions = webmentions.filter((webmention) => {
+							let sourceUrl = getSource(webmention)
+							for (let url of options.blocklist) {
+								if (sourceUrl.includes(url.replace(/\/?$/, "/"))) {
+									return false
+								}
+							}
+							return true
+						})
+					}
+					// Process the allowlist, if it has any entries
+					if (options.allowlist.length) {
+						webmentions = webmentions.filter((webmention) => {
+							let sourceUrl = getSource(webmention)
+							for (let url of options.allowlist) {
+								if (sourceUrl.includes(url.replace(/\/?$/, "/"))) {
+									return true
+								}
+							}
+							return false
+						})
+					}
+					// Sort webmentions by received date for getting most recent Webmention on subsequent requests
+					webmentions = webmentions.sort((a, b) => {
+						return epoch(getReceived(b)) - epoch(getReceived(a))
+					})
+				}
+				return {
+					found: feed[options.key].length,
+					filtered: webmentions,
+				}
+			}
+			return Promise.reject(response)
+		})
+		.catch((error) => {
+			console.log(`[${hostname(options.domain)}] Something went wrong with your request to ${hostname(options.feed)}!`, error)
+		})
+}
+
 const fetchWebmentions = async (options) => {
 	if (!options.domain) {
 		throw new Error("`domain` is a required field when attempting to retrieve Webmentions. See https://www.npmjs.com/package/@chrisburnell/eleventy-cache-webmentions#installation for more information.")
@@ -117,58 +170,51 @@ const fetchWebmentions = async (options) => {
 		const since = webmentions.length ? getReceived(webmentions[0]) : false
 		// Build the URL for the fetch request
 		const url = `${options.feed}${since ? `${options.feed.includes("?") ? "&" : "?"}since=${since}` : ""}`
-		await fetch(url)
-			.then(async (response) => {
-				if (response.ok) {
-					const feed = await response.json()
-					if (feed[options.key].length) {
-						// Combine newly-fetched Webmentions with cached Webmentions
-						webmentions = feed[options.key].concat(webmentions)
-						// Remove duplicates by source URL
-						webmentions = uniqBy([...feed[options.key], ...webmentions], (webmention) => {
-							return getSource(webmention)
-						})
-						// Process the blocklist, if it has any entries
-						if (options.blocklist.length) {
-							webmentions = webmentions.filter((webmention) => {
-								let sourceUrl = getSource(webmention)
-								for (let url of options.blocklist) {
-									if (sourceUrl.includes(url.replace(/\/?$/, "/"))) {
-										return false
-									}
-								}
-								return true
-							})
-						}
-						// Process the allowlist, if it has any entries
-						if (options.allowlist.length) {
-							webmentions = webmentions.filter((webmention) => {
-								let sourceUrl = getSource(webmention)
-								for (let url of options.allowlist) {
-									if (sourceUrl.includes(url.replace(/\/?$/, "/"))) {
-										return true
-									}
-								}
-								return false
-							})
-						}
-						// Sort webmentions by received date for getting most recent Webmention on subsequent requests
-						webmentions = webmentions.sort((a, b) => {
-							return epoch(getReceived(b)) - epoch(getReceived(a))
-						})
-						// Add a console message with the number of fetched and processed Webmentions, if any
-						if (webmentionsCachedLength < webmentions.length) {
-							console.log(`[${hostname(options.domain)}] ${webmentions.length - webmentionsCachedLength} new Webmentions fetched into cache.`)
-						}
-					}
-					await asset.save(webmentions, "json")
-					return webmentions
+
+		// If using webmention.io, loop through pages until no results found
+		if (url.includes("https://webmention.io")) {
+			// Start on page 0, to increment per subsequent request
+			let page = 0
+			// Loop until a break condition is hit
+			while (true) {
+				const perPage = Number(new URL(url).searchParams.get("per-page")) || 20
+				const urlPaginated = url + `&page=${page}`
+				const fetched = await performFetch(options, webmentions, urlPaginated)
+
+				// An error occurred during fetching paged results → break
+				if (!fetched && !fetched.found && !fetched.filtered) {
+					break
 				}
-				return Promise.reject(response)
-			})
-			.catch((error) => {
-				console.log(`[${hostname(options.domain)}] Something went wrong with your request to ${hostname(options.feed)}!`, error)
-			})
+
+				// Page has no Webmentions → break
+				if (fetched.found === 0) {
+					break
+				}
+
+				webmentions = fetched.filtered
+
+				// If there are less Webmentions found than should be in each
+				// page → break
+				if (fetched.found < perPage) {
+					break
+				}
+
+				// Increment page
+				page += 1
+				// Throttle next request
+				await new Promise(resolve => setTimeout(resolve, 1000))
+			}
+		} else {
+			const fetched = await performFetch(options, webmentions, url)
+			webmentions = fetched.filtered
+		}
+
+		await asset.save(webmentions, "json")
+
+		// Add a console message with the number of fetched and processed Webmentions, if any
+		if (webmentionsCachedLength < webmentions.length) {
+			console.log(`[${hostname(options.domain)}] ${webmentions.length - webmentionsCachedLength} new Webmentions fetched into cache.`)
+		}
 	}
 
 	return webmentions

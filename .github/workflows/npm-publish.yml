@@ -14,6 +14,8 @@ jobs:
           node-version: 19
           registry-url: https://registry.npmjs.org/
       - run: npm install
-      - run: npm publish
+      - run: |
+          TAG=$(echo $GITHUB_REF_NAME | grep -oP '^v\d+\.\d+\.\d+-?\K(\w+)?')
+          npm publish --tag ${TAG:-latest}
         env:
           NODE_AUTH_TOKEN: ${{secrets.npm_token}}

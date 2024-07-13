@@ -1,15 +1,31 @@
 {
   "name": "@chrisburnell/eleventy-cache-webmentions",
-  "version": "2.0.6",
+  "version": "2.1.0-beta.1",
   "description": "Cache webmentions using eleventy-fetch and make them available to use in collections, layouts, pages, etc. in Eleventy.",
-  "author": "Chris Burnell <me@chrisburnell.com>",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git@github.com:chrisburnell/eleventy-cache-webmentions.git"
   },
+  "homepage": "https://chrisburnell.com/eleventy-cache-webmentions/",
   "bugs": {
     "url": "https://github.com/chrisburnell/eleventy-cache-webmentions/issues"
+  },
+  "author": "Chris Burnell <me@chrisburnell.com>",
+  "contributors": [
+    {
+      "name": "Chris Burnell",
+      "email": "me@chrisburnell.com",
+      "url": "https://chrisburnell.com",
+      "mastodon": "@chrisburnell@repc.co"
+    }
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "main": "eleventy-cache-webmentions.js",
+  "scripts": {
+    "lint": "eslint eleventy-cache-webmentions.js"
   },
   "keywords": [
     "eleventy",
@@ -19,17 +35,13 @@
     "js",
     "webmention"
   ],
-  "devDependencies": {
-    "eslint": "^9.2.0"
-  },
   "dependencies": {
     "@11ty/eleventy-fetch": "^4.0.1",
     "lodash": "^4.17.21",
     "node-fetch": "2.6.7",
     "sanitize-html": "^2.13.0"
   },
-  "main": "eleventy-cache-webmentions.js",
-  "scripts": {
-    "lint": "eslint eleventy-cache-webmentions.js"
+  "devDependencies": {
+    "eslint": "^9.2.0"
   }
 }
