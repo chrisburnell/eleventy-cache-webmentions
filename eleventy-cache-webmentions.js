@@ -177,7 +177,7 @@ const fetchWebmentions = async (options) => {
 			let page = 0
 			// Loop until a break condition is hit
 			while (true) {
-				const perPage = Number(new URL(url).searchParams.get("per-page")) || 20
+				const perPage = Number(new URL(url).searchParams.get("per-page")) || 1000
 				const urlPaginated = url + `&page=${page}`
 				const fetched = await performFetch(options, webmentions, urlPaginated)
 
