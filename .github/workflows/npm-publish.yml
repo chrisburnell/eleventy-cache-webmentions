@@ -16,6 +16,6 @@ jobs:
       - run: npm install
       - run: |
           TAG=$(echo $GITHUB_REF_NAME | grep -oP '^v\d+\.\d+\.\d+-?\K(\w+)?')
-          npm publish --tag ${TAG:-latest}
+          npm publish --provenance --access=public --tag ${TAG:-latest}
         env:
           NODE_AUTH_TOKEN: ${{secrets.npm_token}}
