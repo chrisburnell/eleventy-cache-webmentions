@@ -4,3 +4,4 @@
 .editorconfig
 .eslintrc.json
 .prettierrc
+.prettierignore
