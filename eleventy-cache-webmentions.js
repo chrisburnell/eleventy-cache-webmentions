@@ -92,6 +92,12 @@ const getType = (webmention) => {
 	);
 };
 
+const getByType = (webmentions, allowedType) => {
+	return webmentions.filter((webmention) => {
+		return allowedTypes === getType(webmention);
+	});
+};
+
 const getByTypes = (webmentions, allowedTypes) => {
 	return webmentions.filter((webmention) => {
 		return allowedTypes.includes(getType(webmention));
@@ -117,61 +123,73 @@ const defaults = {
 const performFetch = async (options, webmentions, url) => {
 	return await fetch(url)
 		.then(async (response) => {
-			if (response.ok) {
-				const feed = await response.json();
-				if (feed[options.key].length) {
-					// Combine newly-fetched Webmentions with cached Webmentions
-					webmentions = feed[options.key].concat(webmentions);
-					// Remove duplicates by source URL
-					webmentions = uniqBy(
-						[...feed[options.key], ...webmentions],
-						(webmention) => {
-							return getSource(webmention);
-						},
-					);
-					// Process the blocklist, if it has any entries
-					if (options.blocklist.length) {
-						webmentions = webmentions.filter((webmention) => {
-							let sourceUrl = getSource(webmention);
-							for (let url of options.blocklist) {
-								if (
-									sourceUrl.includes(url.replace(/\/?$/, "/"))
-								) {
-									return false;
-								}
-							}
-							return true;
-						});
-					}
-					// Process the allowlist, if it has any entries
-					if (options.allowlist.length) {
-						webmentions = webmentions.filter((webmention) => {
-							let sourceUrl = getSource(webmention);
-							for (let url of options.allowlist) {
-								if (
-									sourceUrl.includes(url.replace(/\/?$/, "/"))
-								) {
-									return true;
-								}
-							}
-							return false;
-						});
-					}
-					// Sort webmentions by received date for getting most recent Webmention on subsequent requests
-					webmentions = webmentions.sort((a, b) => {
-						return epoch(getReceived(b)) - epoch(getReceived(a));
-					});
-				}
-				return {
-					found: feed[options.key].length,
-					filtered: webmentions,
-				};
+			if (!response.ok) {
+				return Promise.reject(response);
 			}
-			return Promise.reject(response);
+
+			const feed = await response.json();
+
+			if (!options.key in feed) {
+				console.log(
+					`[${hostname(options.domain)}] ${
+						options.key
+					} was not found as a key in the response from ${hostname(
+						options.feed,
+					)}!`,
+				);
+				return Promise.reject(response);
+			}
+
+			// Combine newly-fetched Webmentions with cached Webmentions
+			webmentions = feed[options.key].concat(webmentions);
+			// Remove duplicates by source URL
+			webmentions = uniqBy(
+				[...feed[options.key], ...webmentions],
+				(webmention) => {
+					return getSource(webmention);
+				},
+			);
+			// Process the blocklist, if it has any entries
+			if (options.blocklist.length) {
+				webmentions = webmentions.filter((webmention) => {
+					let sourceUrl = getSource(webmention);
+					for (let url of options.blocklist) {
+						if (sourceUrl.includes(url.replace(/\/?$/, "/"))) {
+							return false;
+						}
+					}
+					return true;
+				});
+			}
+			// Process the allowlist, if it has any entries
+			if (options.allowlist.length) {
+				webmentions = webmentions.filter((webmention) => {
+					let sourceUrl = getSource(webmention);
+					for (let url of options.allowlist) {
+						if (sourceUrl.includes(url.replace(/\/?$/, "/"))) {
+							return true;
+						}
+					}
+					return false;
+				});
+			}
+			// Sort webmentions by received date for getting most recent Webmention on subsequent requests
+			webmentions = webmentions.sort((a, b) => {
+				return epoch(getReceived(b)) - epoch(getReceived(a));
+			});
+
+			return {
+				found: feed[options.key].length,
+				filtered: webmentions,
+			};
 		})
 		.catch((error) => {
 			console.log(
-				`[${hostname(options.domain)}] Something went wrong with your request to ${hostname(options.feed)}!`,
+				`[${hostname(
+					options.domain,
+				)}] Something went wrong with your request to ${hostname(
+					options.feed,
+				)}!`,
 				error,
 			);
 		});
@@ -212,11 +230,15 @@ const fetchWebmentions = async (options) => {
 
 	// If there is a cached file but it is outside of expiry, fetch fresh
 	// results since the most recent Webmention
-	if (!asset.isCacheValid(options.duration)) {
+	if (!asset.isCacheValid("1s")) {
 		// Get the received date of the most recent Webmention, if it exists
 		const since = webmentions.length ? getReceived(webmentions[0]) : false;
 		// Build the URL for the fetch request
-		const url = `${options.feed}${since ? `${options.feed.includes("?") ? "&" : "?"}since=${since}` : ""}`;
+		const url = `${options.feed}${
+			since
+				? `${options.feed.includes("?") ? "&" : "?"}since=${since}`
+				: ""
+		}`;
 
 		// If using webmention.io, loop through pages until no results found
 		if (url.includes("https://webmention.io")) {
@@ -226,7 +248,7 @@ const fetchWebmentions = async (options) => {
 			while (true) {
 				const perPage =
 					Number(new URL(url).searchParams.get("per-page")) || 1000;
-				const urlPaginated = url + `&page=${page}`;
+				const urlPaginated = url + `&per-page=${perPage}&page=${page}`;
 				const fetched = await performFetch(
 					options,
 					webmentions,
@@ -266,7 +288,9 @@ const fetchWebmentions = async (options) => {
 		// Add a console message with the number of fetched and processed Webmentions, if any
 		if (webmentionsCachedLength < webmentions.length) {
 			console.log(
-				`[${hostname(options.domain)}] ${webmentions.length - webmentionsCachedLength} new Webmentions fetched into cache.`,
+				`[${hostname(options.domain)}] ${
+					webmentions.length - webmentionsCachedLength
+				} new Webmentions fetched into cache.`,
 			);
 		}
 	}
@@ -329,7 +353,11 @@ const getWebmentions = async (options, url, allowedTypes = {}) => {
 						options.allowedHTML,
 					);
 					if (html.length > options.maximumHtmlLength) {
-						entry.contentSanitized = `${options.maximumHtmlText} <a href="${getSource(entry)}">${getSource(entry)}</a>`;
+						entry.contentSanitized = `${
+							options.maximumHtmlText
+						} <a href="${getSource(entry)}">${getSource(
+							entry,
+						)}</a>`;
 					}
 				}
 
@@ -342,20 +370,12 @@ const getWebmentions = async (options, url, allowedTypes = {}) => {
 	);
 };
 
-const getWebmentionsFilter = async (options, url, allowedTypes, callback) => {
-	if (typeof callback !== "function") {
-		callback = allowedTypes;
-		allowedTypes = {};
-	}
-	const webmentions = await getWebmentions(options, url, allowedTypes);
-	callback(null, webmentions);
-};
-
 const eleventyCacheWebmentions = (eleventyConfig, options = {}) => {
 	options = Object.assign(defaults, options);
 
 	// Global Data
 	eleventyConfig.addGlobalData("webmentionsDefaults", defaults);
+	eleventyConfig.addGlobalData("webmentionsOptions", options);
 	const filtered = async () => await filteredWebmentions(options);
 	eleventyConfig.addGlobalData("webmentionsByUrl", filtered);
 	const unfiltered = async () =>
@@ -368,7 +388,7 @@ const eleventyCacheWebmentions = (eleventyConfig, options = {}) => {
 	eleventyConfig.addGlobalData("webmentionsAll", unfiltered);
 
 	// Liquid Filters
-	eleventyConfig.addLiquidFilter("getWebmentions", getWebmentionsFilter);
+	eleventyConfig.addLiquidFilter("getWebmentionsByType", getByType);
 	eleventyConfig.addLiquidFilter("getWebmentionsByTypes", getByTypes);
 	eleventyConfig.addLiquidFilter("getWebmentionPublished", getPublished);
 	eleventyConfig.addLiquidFilter("getWebmentionReceived", getReceived);
@@ -378,10 +398,7 @@ const eleventyCacheWebmentions = (eleventyConfig, options = {}) => {
 	eleventyConfig.addLiquidFilter("getWebmentionType", getType);
 
 	// Nunjucks Filters
-	eleventyConfig.addNunjucksAsyncFilter(
-		"getWebmentions",
-		getWebmentionsFilter,
-	);
+	eleventyConfig.addNunjucksFilter("getWebmentionsByType", getByType);
 	eleventyConfig.addNunjucksFilter("getWebmentionsByTypes", getByTypes);
 	eleventyConfig.addNunjucksFilter("getWebmentionPublished", getPublished);
 	eleventyConfig.addNunjucksFilter("getWebmentionReceived", getReceived);
@@ -397,6 +414,8 @@ module.exports.filteredWebmentions = filteredWebmentions;
 module.exports.webmentionsByUrl = filteredWebmentions;
 module.exports.fetchWebmentions = fetchWebmentions;
 module.exports.getWebmentions = getWebmentions;
+module.exports.getByType = getByType;
+module.exports.getWebmentionsByType = getByType;
 module.exports.getByTypes = getByTypes;
 module.exports.getWebmentionsByTypes = getByTypes;
 module.exports.getPublished = getPublished;

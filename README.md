@@ -205,9 +205,6 @@ webmentions.forEach((webmention) => {
 <summary>Liquid / Nunjucks</summary>
 
 ```twig
-{# get Array of Webmentions for a given URL #}
-{% set webmentions = ("https://example.com" + page.url) | getWebmentions %}
-
 {# filter Webmentions by their response type #}
 {{ set responses = webmentions | getWebmentionsByTypes(['mention-of', 'in-reply-to']) }}
 
@@ -227,7 +224,7 @@ webmentions.forEach((webmention) => {
 
 </details>
 
-## Attach Webmentions to Pages using Directory Data
+### Attach Webmentions to Pages using Directory Data
 
 Using [Eleventy’s Data Cascade](https://www.11ty.dev/docs/data-cascade/), you can attach Webmentions to each page by using [Directory Specific Data Files](https://www.11ty.dev/docs/data-template-dir/).
 
@@ -281,18 +278,7 @@ module.exports = (eleventyConfig) => {
 }
 ```
 
-## Without Directory Data
-
-If you would rather get Webmentions for a given page directly from a Layout/Include/Page itself, you can do so using the Filter, `getWebmentions`:
-
-```twig
-{% set webmentions = ("https://example.com" + page.url) | getWebmentions %}
-{% for webmention in webmentions %}
-    ...
-{% endfor %}
-```
-
-## Get specific types of Webmentions
+### Get specific types of Webmentions
 
 Instead of getting all the Webmentions for a given page, you may want to grab only certain types of Webmentions. This is useful if you want to display different types of Webmentions separately, e.g.:
 
@@ -304,7 +290,7 @@ Instead of getting all the Webmentions for a given page, you may want to grab on
 {% set replies = webmentions | getWebmentionsByTypes(['mention-of', 'in-reply-to']) %}
 ```
 
-## Get all Webmentions at once
+### Get all Webmentions at once
 
 If you need it, the plugin also makes available an Object containing your cached Webmentions organised in key:value pairs, where each key is a full URL on your website and its value is an Array of Webmentions sent to that URL:
 
