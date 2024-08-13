@@ -162,9 +162,13 @@ const performFetch = async (options, webmentions, url) => {
 			// Process the blocklist, if it has any entries
 			if (options.blocklist.length) {
 				webmentions = webmentions.filter((webmention) => {
-					let sourceUrl = getSource(webmention);
-					for (let url of options.blocklist) {
-						if (sourceUrl.includes(url.replace(/\/?$/, "/"))) {
+					let url = getSource(webmention);
+					let source = getSource(webmention);
+					for (let blocklistURL of options.blocklist) {
+						if (
+							url.includes(blocklistURL.replace(/\/?$/, "/")) ||
+							source.includes(blocklistURL.replace(/\/?$/, "/"))
+						) {
 							return false;
 						}
 					}
@@ -174,9 +178,13 @@ const performFetch = async (options, webmentions, url) => {
 			// Process the allowlist, if it has any entries
 			if (options.allowlist.length) {
 				webmentions = webmentions.filter((webmention) => {
-					let sourceUrl = getSource(webmention);
-					for (let url of options.allowlist) {
-						if (sourceUrl.includes(url.replace(/\/?$/, "/"))) {
+					let url = getSource(webmention);
+					let source = getSource(webmention);
+					for (let allowlistURL of options.allowlist) {
+						if (
+							url.includes(allowlistURL.replace(/\/?$/, "/")) ||
+							source.includes(allowlistURL.replace(/\/?$/, "/"))
+						) {
 							return true;
 						}
 					}
