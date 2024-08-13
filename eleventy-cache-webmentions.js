@@ -73,6 +73,15 @@ const getContent = (webmention) => {
 
 const getSource = (webmention) => {
 	return (
+		webmention["wm-source"] ||
+		webmention["source"] ||
+		webmention?.["data"]?.["url"] ||
+		webmention["url"]
+	);
+};
+
+const getURL = (webmention) => {
+	return (
 		webmention?.["data"]?.["url"] ||
 		webmention["url"] ||
 		webmention["wm-source"] ||
@@ -399,6 +408,7 @@ const eleventyCacheWebmentions = (eleventyConfig, options = {}) => {
 	eleventyConfig.addLiquidFilter("getWebmentionReceived", getReceived);
 	eleventyConfig.addLiquidFilter("getWebmentionContent", getContent);
 	eleventyConfig.addLiquidFilter("getWebmentionSource", getSource);
+	eleventyConfig.addLiquidFilter("getWebmentionURL", getURL);
 	eleventyConfig.addLiquidFilter("getWebmentionTarget", getTarget);
 	eleventyConfig.addLiquidFilter("getWebmentionType", getType);
 
@@ -409,6 +419,7 @@ const eleventyCacheWebmentions = (eleventyConfig, options = {}) => {
 	eleventyConfig.addNunjucksFilter("getWebmentionReceived", getReceived);
 	eleventyConfig.addNunjucksFilter("getWebmentionContent", getContent);
 	eleventyConfig.addNunjucksFilter("getWebmentionSource", getSource);
+	eleventyConfig.addNunjucksFilter("getWebmentionURL", getURL);
 	eleventyConfig.addNunjucksFilter("getWebmentionTarget", getTarget);
 	eleventyConfig.addNunjucksFilter("getWebmentionType", getType);
 };
@@ -431,6 +442,8 @@ module.exports.getContent = getContent;
 module.exports.getWebmentionContent = getContent;
 module.exports.getSource = getSource;
 module.exports.getWebmentionSource = getSource;
+module.exports.getURL = getURL;
+module.exports.getWebmentionURL = getURL;
 module.exports.getTarget = getTarget;
 module.exports.getWebmentionTarget = getTarget;
 module.exports.getType = getType;
