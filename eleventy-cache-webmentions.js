@@ -437,6 +437,7 @@ module.exports.defaults = defaults;
 module.exports.filteredWebmentions = filteredWebmentions;
 module.exports.webmentionsByUrl = filteredWebmentions;
 module.exports.fetchWebmentions = fetchWebmentions;
+module.exports.performFetch = performFetch;
 module.exports.getWebmentions = getWebmentions;
 module.exports.getByType = getByType;
 module.exports.getWebmentionsByType = getByType;

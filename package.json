@@ -1,6 +1,6 @@
 {
   "name": "@chrisburnell/eleventy-cache-webmentions",
-  "version": "2.1.5",
+  "version": "2.1.6",
   "description": "Cache webmentions using eleventy-fetch and make them available to use in collections, layouts, pages, etc. in Eleventy.",
   "license": "MIT",
   "repository": {
@@ -39,7 +39,8 @@
   },
   "main": "eleventy-cache-webmentions.js",
   "scripts": {
-    "lint": "eslint eleventy-cache-webmentions.js"
+    "lint": "eslint eleventy-cache-webmentions.js",
+    "test": "node --test"
   },
   "keywords": [
     "eleventy",
@@ -56,6 +57,7 @@
     "sanitize-html": "^2.13.0"
   },
   "devDependencies": {
-    "eslint": "^9.8.0"
+    "eslint": "^9.8.0",
+    "nock": "^13.5.4"
   }
 }

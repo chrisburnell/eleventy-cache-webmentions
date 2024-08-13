@@ -5,3 +5,4 @@
 .eslintrc.json
 .prettierrc
 .prettierignore
+eleventy-cache-webmentions.test.js
