@@ -55,8 +55,8 @@ const getReceived = (webmention) => {
 	return (
 		webmention["wm-received"] ||
 		webmention["verified_date"] ||
-		webmention?.["data"]?.["published"] ||
-		webmention["published"]
+		webmention["published"] ||
+		webmention?.["data"]?.["published"]
 	);
 };
 
@@ -94,7 +94,7 @@ const getType = (webmention) => {
 
 const getByType = (webmentions, allowedType) => {
 	return webmentions.filter((webmention) => {
-		return allowedTypes === getType(webmention);
+		return allowedType === getType(webmention);
 	});
 };
 
