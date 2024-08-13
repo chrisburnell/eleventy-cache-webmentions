@@ -83,6 +83,12 @@ Make sure you get the correct values for this configuration. Check below for bot
             <td>1.1.2</td>
         </tr>
         <tr>
+            <td><code>refresh</code></td>
+            <td><code>false</code></td>
+            <td>Forces fresh results from the Webmention endpoint every time.</td>
+            <td>2.1.3</td>
+        </tr>
+        <tr>
             <td><code>duration</code></td>
             <td><code>"1d"</code> <em>or</em> 1 day</td>
             <td>See <a href="https://www.11ty.dev/docs/plugins/cache/#change-the-cache-duration">Eleventy Fetch’s Cache Duration</a> for more information.</td>

@@ -105,6 +105,7 @@ const getByTypes = (webmentions, allowedTypes) => {
 };
 
 const defaults = {
+	refresh: false,
 	duration: "1d",
 	uniqueKey: "webmentions",
 	allowedHTML: {
@@ -219,8 +220,9 @@ const fetchWebmentions = async (options) => {
 
 	let webmentions = [];
 
-	// If there is a cached file at all, grab its contents now
-	if (asset.isCacheValid("9001y")) {
+	// Unless specifically getting fresh Webmentions, if there is a cached file
+	// at all, grab its contents now
+	if (asset.isCacheValid("9001y") && !options.refresh) {
 		webmentions = await asset.getCachedValue();
 	}
 
@@ -230,7 +232,7 @@ const fetchWebmentions = async (options) => {
 
 	// If there is a cached file but it is outside of expiry, fetch fresh
 	// results since the most recent Webmention
-	if (!asset.isCacheValid("1s")) {
+	if (!asset.isCacheValid(options.refresh ? "0s" : options.duration)) {
 		// Get the received date of the most recent Webmention, if it exists
 		const since = webmentions.length ? getReceived(webmentions[0]) : false;
 		// Build the URL for the fetch request
