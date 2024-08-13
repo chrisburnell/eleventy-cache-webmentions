@@ -242,13 +242,16 @@ const fetchWebmentions = async (options) => {
 
 		// If using webmention.io, loop through pages until no results found
 		if (url.includes("https://webmention.io")) {
+			const urlObject = new URL(url);
+			const perPage =
+				Number(urlObject.searchParams.get("per-page")) || 1000;
+			urlObject.searchParams.delete("per-page");
 			// Start on page 0, to increment per subsequent request
 			let page = 0;
 			// Loop until a break condition is hit
 			while (true) {
-				const perPage =
-					Number(new URL(url).searchParams.get("per-page")) || 1000;
-				const urlPaginated = url + `&per-page=${perPage}&page=${page}`;
+				const urlPaginated =
+					urlObject.href + `&per-page=${perPage}&page=${page}`;
 				const fetched = await performFetch(
 					options,
 					webmentions,
