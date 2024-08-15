@@ -1,14 +1,19 @@
 const fetch = require("node-fetch");
 const sanitizeHTML = require("sanitize-html");
-const uniqBy = require("lodash/uniqBy");
+const uniqBy = require("lodash.uniqby");
 const { AssetCache } = require("@11ty/eleventy-fetch");
+const chalk = require("chalk");
 
 const absoluteURL = (url, domain) => {
 	try {
 		return new URL(url, domain).toString();
 	} catch (e) {
-		console.log(
-			`Trying to convert ${url} to be an absolute url with base ${domain} and failed.`,
+		console.error(
+			`Trying to convert ${chalk.bold(
+				url,
+			)} to be an absolute url with base ${chalk.bold(
+				domain,
+			)} and failed.`,
 		);
 		return url;
 	}
@@ -141,10 +146,10 @@ const performFetch = async (options, webmentions, url) => {
 
 			if (!options.key in feed) {
 				console.log(
-					`[${hostname(options.domain)}] ${
+					`${chalk.grey(`[${hostname(options.domain)}]`)} ${
 						options.key
-					} was not found as a key in the response from ${hostname(
-						options.feed,
+					} was not found as a key in the response from ${chalkf.bold(
+						hostname(options.feed),
 					)}!`,
 				);
 				return Promise.reject(response);
@@ -203,10 +208,10 @@ const performFetch = async (options, webmentions, url) => {
 		})
 		.catch((error) => {
 			console.log(
-				`[${hostname(
-					options.domain,
-				)}] Something went wrong with your request to ${hostname(
-					options.feed,
+				`${chalk.grey(
+					`[${hostname(options.domain)}]`,
+				)} Something went wrong with your request to ${chalk.bold(
+					hostname(options.feed),
 				)}!`,
 				error,
 			);
@@ -232,7 +237,10 @@ const fetchWebmentions = async (options) => {
 		);
 	}
 
-	let asset = new AssetCache(options.uniqueKey, options.directory);
+	let asset = new AssetCache(
+		options.uniqueKey || `webmentions-${hostname(options.domain)}`,
+		options.directory,
+	);
 	asset.ensureDir();
 
 	let webmentions = [];
@@ -250,6 +258,7 @@ const fetchWebmentions = async (options) => {
 	// If there is a cached file but it is outside of expiry, fetch fresh
 	// results since the most recent Webmention
 	if (!asset.isCacheValid(options.refresh ? "0s" : options.duration)) {
+		const performanceStart = process.hrtime();
 		// Get the received date of the most recent Webmention, if it exists
 		const since = webmentions.length ? getReceived(webmentions[0]) : false;
 		// Build the URL for the fetch request
@@ -307,12 +316,16 @@ const fetchWebmentions = async (options) => {
 
 		await asset.save(webmentions, "json");
 
+		const performance = process.hrtime(performanceStart);
+
 		// Add a console message with the number of fetched and processed Webmentions, if any
 		if (webmentionsCachedLength < webmentions.length) {
 			console.log(
-				`[${hostname(options.domain)}] ${
-					webmentions.length - webmentionsCachedLength
-				} new Webmentions fetched into cache.`,
+				`${chalk.grey(`[${hostname(options.domain)}]`)} ${chalk.bold(
+					webmentions.length - webmentionsCachedLength,
+				)} new Webmentions fetched into cache in ${chalk.bold(
+					(performance[0] + performance[1] / 1e9).toFixed(3) + "s",
+				)}.`,
 			);
 		}
 	}

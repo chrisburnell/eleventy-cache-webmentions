@@ -112,7 +112,6 @@ describe("filteredWebmentions()", () => {
 		.reply(200, mentions);
 	it("Should return an object of Key: URL, Value: Array of Webmentions", async () => {
 		const webmentions = await filteredWebmentions(options);
-		console.log("webmentions", webmentions);
 		assert.strictEqual(Object.keys(webmentions).length, 2);
 	});
 });
