@@ -4,6 +4,23 @@ const uniqBy = require("lodash.uniqby");
 const { AssetCache } = require("@11ty/eleventy-fetch");
 const chalk = require("chalk");
 
+const defaults = {
+	refresh: false,
+	duration: "1d",
+	uniqueKey: "webmentions",
+	allowedHTML: {
+		allowedTags: ["b", "i", "em", "strong", "a"],
+		allowedAttributes: {
+			a: ["href"],
+		},
+	},
+	allowlist: [],
+	blocklist: [],
+	urlReplacements: {},
+	maximumHtmlLength: 1000,
+	maximumHtmlText: "mentioned this in",
+};
+
 const absoluteURL = (url, domain) => {
 	try {
 		return new URL(url, domain).toString();
@@ -118,21 +135,42 @@ const getByTypes = (webmentions, allowedTypes) => {
 	});
 };
 
-const defaults = {
-	refresh: false,
-	duration: "1d",
-	uniqueKey: "webmentions",
-	allowedHTML: {
-		allowedTags: ["b", "i", "em", "strong", "a"],
-		allowedAttributes: {
-			a: ["href"],
-		},
-	},
-	allowlist: [],
-	blocklist: [],
-	urlReplacements: {},
-	maximumHtmlLength: 1000,
-	maximumHtmlText: "mentioned this in",
+const removeDuplicates = (webmentions) => {
+	return uniqBy(webmentions, (webmention) => {
+		return getSource(webmention);
+	});
+};
+
+const processBlocklist = (webmentions, blocklist) => {
+	return webmentions.filter((webmention) => {
+		let url = getSource(webmention);
+		let source = getSource(webmention);
+		for (let blocklistURL of blocklist) {
+			if (
+				url.includes(blocklistURL.replace(/\/?$/, "/")) ||
+				source.includes(blocklistURL.replace(/\/?$/, "/"))
+			) {
+				return false;
+			}
+		}
+		return true;
+	});
+};
+
+const processAllowlist = (webmentions, allowlist) => {
+	return webmentions.filter((webmention) => {
+		let url = getSource(webmention);
+		let source = getSource(webmention);
+		for (let allowlistURL of allowlist) {
+			if (
+				url.includes(allowlistURL.replace(/\/?$/, "/")) ||
+				source.includes(allowlistURL.replace(/\/?$/, "/"))
+			) {
+				return true;
+			}
+		}
+		return false;
+	});
 };
 
 const performFetch = async (options, webmentions, url) => {
@@ -158,43 +196,14 @@ const performFetch = async (options, webmentions, url) => {
 			// Combine newly-fetched Webmentions with cached Webmentions
 			webmentions = feed[options.key].concat(webmentions);
 			// Remove duplicates by source URL
-			webmentions = uniqBy(
-				[...feed[options.key], ...webmentions],
-				(webmention) => {
-					return getSource(webmention);
-				},
-			);
+			webmentions = removeDuplicates(webmentions);
 			// Process the blocklist, if it has any entries
 			if (options.blocklist.length) {
-				webmentions = webmentions.filter((webmention) => {
-					let url = getSource(webmention);
-					let source = getSource(webmention);
-					for (let blocklistURL of options.blocklist) {
-						if (
-							url.includes(blocklistURL.replace(/\/?$/, "/")) ||
-							source.includes(blocklistURL.replace(/\/?$/, "/"))
-						) {
-							return false;
-						}
-					}
-					return true;
-				});
+				webmentions = processBlocklist(webmentions, options.blocklist);
 			}
 			// Process the allowlist, if it has any entries
 			if (options.allowlist.length) {
-				webmentions = webmentions.filter((webmention) => {
-					let url = getSource(webmention);
-					let source = getSource(webmention);
-					for (let allowlistURL of options.allowlist) {
-						if (
-							url.includes(allowlistURL.replace(/\/?$/, "/")) ||
-							source.includes(allowlistURL.replace(/\/?$/, "/"))
-						) {
-							return true;
-						}
-					}
-					return false;
-				});
+				webmentions = processAllowlist(webmentions, options.allowlist);
 			}
 			// Sort webmentions by received date for getting most recent Webmention on subsequent requests
 			webmentions = webmentions.sort((a, b) => {
@@ -314,6 +323,16 @@ const fetchWebmentions = async (options) => {
 			webmentions = fetched.filtered;
 		}
 
+		// Process the blocklist, if it has any entries
+		if (options.blocklist.length) {
+			webmentions = processBlocklist(webmentions, options.blocklist);
+		}
+
+		// Process the allowlist, if it has any entries
+		if (options.allowlist.length) {
+			webmentions = processAllowlist(webmentions, options.allowlist);
+		}
+
 		await asset.save(webmentions, "json");
 
 		const performance = process.hrtime(performanceStart);
@@ -324,7 +343,8 @@ const fetchWebmentions = async (options) => {
 				`${chalk.grey(`[${hostname(options.domain)}]`)} ${chalk.bold(
 					webmentions.length - webmentionsCachedLength,
 				)} new Webmentions fetched into cache in ${chalk.bold(
-					(performance[0] + performance[1] / 1e9).toFixed(3) + "s",
+					(performance[0] + performance[1] / 1e9).toFixed(3) +
+						" seconds",
 				)}.`,
 			);
 		}
