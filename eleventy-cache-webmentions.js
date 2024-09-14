@@ -1,6 +1,5 @@
 const fetch = require("node-fetch");
 const sanitizeHTML = require("sanitize-html");
-const uniqBy = require("lodash.uniqby");
 const { AssetCache } = require("@11ty/eleventy-fetch");
 const chalk = require("chalk");
 
@@ -136,9 +135,20 @@ const getByTypes = (webmentions, allowedTypes) => {
 };
 
 const removeDuplicates = (webmentions) => {
-	return uniqBy(webmentions, (webmention) => {
-		return getSource(webmention);
-	});
+	return [
+		...webmentions
+			.reduce((map, webmention) => {
+				const key =
+					webmention === null || webmention === undefined
+						? webmention
+						: getSource(webmention);
+				if (!map.has(key)) {
+					map.set(key, webmention);
+				}
+				return map;
+			}, new Map())
+			.values(),
+	];
 };
 
 const processBlocklist = (webmentions, blocklist) => {
