@@ -1,4 +1,3 @@
-const fetch = require("node-fetch");
 const sanitizeHTML = require("sanitize-html");
 const { AssetCache } = require("@11ty/eleventy-fetch");
 const chalk = require("chalk");
@@ -260,7 +259,6 @@ const fetchWebmentions = async (options) => {
 		options.uniqueKey || `webmentions-${hostname(options.domain)}`,
 		options.directory,
 	);
-	asset.ensureDir();
 
 	let webmentions = [];
 
