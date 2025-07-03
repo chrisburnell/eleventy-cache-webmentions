@@ -2,6 +2,8 @@
 
 > Cache webmentions using eleventy-fetch and make them available to use in collections, layouts, pages, etc. in Eleventy.
 
+[![Deploy](https://img.shields.io/github/actions/workflow/status/chrisburnell/eleventy-cache-webmentions/npm-publish.yml?logo=github)](https://github.com/chrisburnell/eleventy-cache-webmentions/actions/workflows/npm-publish.yml)  ​ [![NPM Downloads](https://img.shields.io/npm/dm/%40chrisburnell%2Feleventy-cache-webmentions?logo=npm&color=%235f8aa6)](https://www.npmjs.com/package/@chrisburnell/eleventy-cache-webmentions)
+
 ## Breaking change for v2.0.0
 
 Version 2.0.0 introduces a breaking change for those migrating from earlier versions of the plugin. This affects usage of the plugin from JavaScript files; specifically, you will need to make a small change to the way that you `require()` the plugin by removing an extra set of parentheses:
