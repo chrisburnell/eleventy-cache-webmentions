@@ -225,14 +225,19 @@ const performFetch = async (options, webmentions, url) => {
 			};
 		})
 		.catch((error) => {
-			console.log(
+			console.warn(
 				`${chalk.grey(
 					`[${hostname(options.domain)}]`,
-				)} Something went wrong with your request to ${chalk.bold(
+				)} Something went wrong with your Webmention request to ${chalk.bold(
 					hostname(options.feed),
 				)}!`,
-				error,
 			);
+			console.warn(error instanceof Error ? error.message : error);
+
+			return {
+				found: 0,
+				filtered: webmentions,
+			};
 		});
 };
 
