@@ -1,6 +1,6 @@
 const sanitizeHTML = require("sanitize-html");
 const { AssetCache } = require("@11ty/eleventy-fetch");
-const chalk = require("chalk");
+const { styleText } = require("node:util");
 
 const defaults = {
 	refresh: false,
@@ -24,9 +24,11 @@ const absoluteURL = (url, domain) => {
 		return new URL(url, domain).toString();
 	} catch (e) {
 		console.error(
-			`Trying to convert ${chalk.bold(
+			`Trying to convert ${styleText(
+				"bold",
 				url,
-			)} to be an absolute url with base ${chalk.bold(
+			)} to be an absolute url with base ${styleText(
+				"bold",
 				domain,
 			)} and failed.`,
 		);
@@ -193,9 +195,10 @@ const performFetch = async (options, webmentions, url) => {
 
 			if (!options.key in feed) {
 				console.log(
-					`${chalk.grey(`[${hostname(options.domain)}]`)} ${
+					`${styleText("grey", `[${hostname(options.domain)}]`)} ${
 						options.key
-					} was not found as a key in the response from ${chalkf.bold(
+					} was not found as a key in the response from ${styleText(
+						"bold",
 						hostname(options.feed),
 					)}!`,
 				);
@@ -226,9 +229,11 @@ const performFetch = async (options, webmentions, url) => {
 		})
 		.catch((error) => {
 			console.warn(
-				`${chalk.grey(
+				`${styleText(
+					"grey",
 					`[${hostname(options.domain)}]`,
-				)} Something went wrong with your Webmention request to ${chalk.bold(
+				)} Something went wrong with your Webmention request to ${styleText(
+					"bold",
 					hostname(options.feed),
 				)}!`,
 			);
@@ -353,9 +358,14 @@ const fetchWebmentions = async (options) => {
 		// Add a console message with the number of fetched and processed Webmentions, if any
 		if (webmentionsCachedLength < webmentions.length) {
 			console.log(
-				`${chalk.grey(`[${hostname(options.domain)}]`)} ${chalk.bold(
-					webmentions.length - webmentionsCachedLength,
-				)} new Webmentions fetched into cache in ${chalk.bold(
+				`${styleText(
+					"grey",
+					`[${hostname(options.domain)}]`,
+				)} ${styleText(
+					"bold",
+					String(webmentions.length - webmentionsCachedLength),
+				)} new Webmentions fetched into cache in ${styleText(
+					"bold",
 					(performance[0] + performance[1] / 1e9).toFixed(3) +
 						" seconds",
 				)}.`,
