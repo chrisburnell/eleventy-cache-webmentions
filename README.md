@@ -31,6 +31,8 @@ Check it out: [Webmention Setup for Eleventy](https://chrisburnell.com/article/w
 -   **With npm:** `npm install @chrisburnell/eleventy-cache-webmentions`
 -   **Direct download:** [https://github.com/chrisburnell/eleventy-cache-webmentions/archive/master.zip](https://github.com/chrisburnell/eleventy-cache-webmentions/archive/master.zip)
 
+*Important Note: This plugin uses Node.js features only present in versions 18+. If you’re deploying your website somewhere, check to make sure that your Node.js version is set to 18 or greater. ([Cloudflare Pages](https://community.cloudflare.com/t/pages-node-js-version/295548/3), [GitHub Actions](https://github.com/actions/setup-node), [Netlify](https://answers.netlify.com/t/specifying-a-node-version/9701))*
+
 Inside your Eleventy config file, use `addPlugin()` to add it to your project:
 
 ```javascript
