@@ -2,6 +2,9 @@ const sanitizeHTML = require("sanitize-html");
 const { AssetCache } = require("@11ty/eleventy-fetch");
 const { styleText } = require("node:util");
 
+/**
+ * @type {Object}
+ */
 const defaults = {
 	refresh: false,
 	duration: "1d",
@@ -19,6 +22,11 @@ const defaults = {
 	maximumHtmlText: "mentioned this in",
 };
 
+/**
+ * @param {string} url
+ * @param {string} domain
+ * @returns {string}
+ */
 const absoluteURL = (url, domain) => {
 	try {
 		return new URL(url, domain).toString();
@@ -36,12 +44,21 @@ const absoluteURL = (url, domain) => {
 	}
 };
 
+/**
+ * @param {string} url
+ * @returns {string}
+ */
 const baseUrl = (url) => {
 	let hashSplit = url.split("#");
 	let queryparamSplit = hashSplit[0].split("?");
 	return queryparamSplit[0];
 };
 
+/**
+ * @param {string} url
+ * @param {Object} urlReplacements
+ * @returns {string}
+ */
 const fixUrl = (url, urlReplacements) => {
 	return Object.entries(urlReplacements).reduce(
 		(accumulator, [key, value]) => {
@@ -52,18 +69,30 @@ const fixUrl = (url, urlReplacements) => {
 	);
 };
 
-const hostname = (value) => {
-	if (typeof value === "string" && value.includes("//")) {
-		const urlObject = new URL(value);
+/**
+ * @param {string} url
+ * @returns {string}
+ */
+const hostname = (url) => {
+	if (typeof url === "string" && url.includes("//")) {
+		const urlObject = new URL(url);
 		return urlObject.hostname;
 	}
-	return value;
+	return url;
 };
 
-const epoch = (value) => {
-	return new Date(value).getTime();
+/**
+ * @param {string|number|Date} date
+ * @returns {number}
+ */
+const epoch = (date) => {
+	return new Date(date).getTime();
 };
 
+/**
+ * @param {Object} date
+ * @returns {string|undefined}
+ */
 const getPublished = (webmention) => {
 	return (
 		webmention?.["data"]?.["published"] ||
@@ -73,6 +102,10 @@ const getPublished = (webmention) => {
 	);
 };
 
+/**
+ * @param {Object} webmention
+ * @returns {string|undefined}
+ */
 const getReceived = (webmention) => {
 	return (
 		webmention["wm-received"] ||
@@ -82,6 +115,10 @@ const getReceived = (webmention) => {
 	);
 };
 
+/**
+ * @param {Object} webmention
+ * @returns {string}
+ */
 const getContent = (webmention) => {
 	return (
 		webmention?.["contentSanitized"] ||
@@ -93,6 +130,10 @@ const getContent = (webmention) => {
 	);
 };
 
+/**
+ * @param {Object} webmention
+ * @returns {string}
+ */
 const getSource = (webmention) => {
 	return (
 		webmention["wm-source"] ||
@@ -102,6 +143,10 @@ const getSource = (webmention) => {
 	);
 };
 
+/**
+ * @param {Object} webmention
+ * @returns {string}
+ */
 const getURL = (webmention) => {
 	return (
 		webmention?.["data"]?.["url"] ||
@@ -111,10 +156,18 @@ const getURL = (webmention) => {
 	);
 };
 
+/**
+ * @param {Object} webmention
+ * @returns {string}
+ */
 const getTarget = (webmention) => {
 	return webmention["wm-target"] || webmention["target"];
 };
 
+/**
+ * @param {Object} webmention
+ * @returns {string|undefined}
+ */
 const getType = (webmention) => {
 	return (
 		webmention["wm-property"] ||
@@ -123,18 +176,32 @@ const getType = (webmention) => {
 	);
 };
 
-const getByType = (webmentions, allowedType) => {
+/**
+ * @param {Object[]} webmentions
+ * @param {string} type
+ * @returns {Object[]}
+ */
+const getByType = (webmentions, type) => {
 	return webmentions.filter((webmention) => {
-		return allowedType === getType(webmention);
+		return type === getType(webmention);
 	});
 };
 
-const getByTypes = (webmentions, allowedTypes) => {
+/**
+ * @param {Object[]} webmentions
+ * @param {string[]} types
+ * @returns {Object[]}
+ */
+const getByTypes = (webmentions, types) => {
 	return webmentions.filter((webmention) => {
-		return allowedTypes.includes(getType(webmention));
+		return types.includes(getType(webmention));
 	});
 };
 
+/**
+ * @param {Object[]} webmentions
+ * @returns {Object[]}
+ */
 const removeDuplicates = (webmentions) => {
 	return [
 		...webmentions
@@ -152,6 +219,11 @@ const removeDuplicates = (webmentions) => {
 	];
 };
 
+/**
+ * @param {Object[]} webmentions
+ * @param {string[]} blocklist
+ * @returns {Object[]}
+ */
 const processBlocklist = (webmentions, blocklist) => {
 	return webmentions.filter((webmention) => {
 		let url = getSource(webmention);
@@ -168,6 +240,11 @@ const processBlocklist = (webmentions, blocklist) => {
 	});
 };
 
+/**
+ * @param {Object[]} webmentions
+ * @param {string[]} allowlist
+ * @returns {Object[]}
+ */
 const processAllowlist = (webmentions, allowlist) => {
 	return webmentions.filter((webmention) => {
 		let url = getSource(webmention);
@@ -184,6 +261,12 @@ const processAllowlist = (webmentions, allowlist) => {
 	});
 };
 
+/**
+ * @param {Object} options
+ * @param {Object[]} webmentions
+ * @param {string} url
+ * @returns {Promise<{found:number,filtered:Object[]}>}
+ */
 const performFetch = async (options, webmentions, url) => {
 	return await fetch(url)
 		.then(async (response) => {
@@ -246,6 +329,10 @@ const performFetch = async (options, webmentions, url) => {
 		});
 };
 
+/**
+ * @param {Object} options
+ * @returns {Promise<Object[]>}
+ */
 const fetchWebmentions = async (options) => {
 	if (!options.domain) {
 		throw new Error(
@@ -377,6 +464,11 @@ const fetchWebmentions = async (options) => {
 };
 
 let filtered = {};
+
+/**
+ * @param {Object} options
+ * @returns {Promise<Object<string, Object[]>>}
+ */
 const filteredWebmentions = async (options) => {
 	if (Object.entries(filtered).length) {
 		return filtered;
@@ -404,7 +496,13 @@ const filteredWebmentions = async (options) => {
 	return filtered;
 };
 
-const getWebmentions = async (options, url, allowedTypes = {}) => {
+/**
+ * @param {Object} options
+ * @param {string} url
+ * @param {string[]|Object} [types={}]
+ * @returns {Promise<Object[]>}
+ */
+const getWebmentions = async (options, url, types = {}) => {
 	const webmentions = await filteredWebmentions(options);
 	url = absoluteURL(url, options.domain);
 
@@ -416,9 +514,8 @@ const getWebmentions = async (options, url, allowedTypes = {}) => {
 		webmentions[url]
 			// Filter webmentions by allowed response post types
 			.filter((entry) => {
-				return typeof allowedTypes === "object" &&
-					Object.keys(allowedTypes).length
-					? allowedTypes.includes(getType(entry))
+				return typeof types === "object" && Object.keys(types).length
+					? types.includes(getType(entry))
 					: true;
 			})
 			// Sanitize content of webmentions against HTML limit
@@ -448,6 +545,10 @@ const getWebmentions = async (options, url, allowedTypes = {}) => {
 	);
 };
 
+/**
+ * @param {Object} eleventyConfig
+ * @param {Object} [options={}]
+ */
 const eleventyCacheWebmentions = (eleventyConfig, options = {}) => {
 	options = Object.assign(defaults, options);
 
