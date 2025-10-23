@@ -1,21 +1,20 @@
-const assert = require("node:assert/strict");
-const { describe, it } = require("node:test");
-const nock = require("nock");
-const {
+import nock from "nock";
+import assert from "node:assert/strict";
+import { describe, it } from "node:test";
+import {
 	defaults,
-	filteredWebmentions,
 	fetchWebmentions,
-	performFetch,
-	getWebmentions,
+	filteredWebmentions,
+	getByType,
+	getByTypes,
+	getContent,
 	getPublished,
 	getReceived,
-	getContent,
 	getSource,
 	getTarget,
 	getType,
-	getByType,
-	getByTypes,
-} = require("./eleventy-cache-webmentions.js");
+	getWebmentions,
+} from "./eleventy-cache-webmentions.js";
 
 const options = Object.assign({}, defaults, {
 	refresh: true,
@@ -120,23 +119,13 @@ describe("fetchWebmentions()", () => {
 	const scope = nock("https://example.com")
 		.get("/mentions.json")
 		.reply(200, mentions);
-	it("Should return an array of objects of Key: URL, Value: Array of Webmentions`", async () => {
-		const fetched = await fetchWebmentions(options);
-		assert.strictEqual(fetched.length, 3);
-	});
-});
-
-describe("performFetch()", () => {
-	const scope = nock("https://example.com")
-		.get("/mentions.json")
-		.reply(200, mentions);
 	it("Should return an object of Key: URL, Value: Array of Webmentions`", async () => {
-		const fetched = await performFetch(
+		const fetched = await fetchWebmentions(
 			options,
 			[],
 			"https://example.com/mentions.json",
 		);
-		assert.strictEqual(fetched.filtered.length, 3);
+		assert.strictEqual(fetched.webmentions.length, 3);
 	});
 });
 
