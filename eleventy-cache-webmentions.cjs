@@ -1,6 +1,6 @@
-import { AssetCache } from "@11ty/eleventy-fetch";
-import { styleText } from "node:util";
-import sanitizeHTML from "sanitize-html";
+const { AssetCache } = require("@11ty/eleventy-fetch");
+const { styleText } = require("node:util");
+const sanitizeHTML = require("sanitize-html");
 
 /**
  * @typedef {sanitizeHTML.IOptions} AllowedHTML
@@ -64,7 +64,7 @@ import sanitizeHTML from "sanitize-html";
 /**
  * @type {OptionsDefaults}
  */
-export const defaults = {
+const defaults = {
 	refresh: false,
 	duration: "1d",
 	uniqueKey: "webmentions",
@@ -174,7 +174,7 @@ const removeDuplicates = (webmentions) => {
  * @param {Webmention} webmention
  * @returns {string|undefined}
  */
-export const getPublished = (webmention) => {
+const getPublished = (webmention) => {
 	return (
 		webmention?.["data"]?.["published"] ||
 		webmention["published"] ||
@@ -182,13 +182,12 @@ export const getPublished = (webmention) => {
 		webmention["verified_date"]
 	);
 };
-export const getWebmentionPublished = getPublished;
 
 /**
  * @param {Webmention} webmention
  * @returns {string|undefined}
  */
-export const getReceived = (webmention) => {
+const getReceived = (webmention) => {
 	return (
 		webmention["wm-received"] ||
 		webmention["verified_date"] ||
@@ -196,13 +195,12 @@ export const getReceived = (webmention) => {
 		webmention?.["data"]?.["published"]
 	);
 };
-export const getWebmentionReceived = getReceived;
 
 /**
  * @param {Webmention} webmention
  * @returns {string}
  */
-export const getContent = (webmention) => {
+const getContent = (webmention) => {
 	return (
 		webmention?.["contentSanitized"] ||
 		webmention?.["content"]?.["html"] ||
@@ -212,13 +210,12 @@ export const getContent = (webmention) => {
 		""
 	);
 };
-export const getWebmentionContent = getContent;
 
 /**
  * @param {Webmention} webmention
  * @returns {string|undefined}
  */
-export const getSource = (webmention) => {
+const getSource = (webmention) => {
 	return (
 		webmention["wm-source"] ||
 		webmention["source"] ||
@@ -226,13 +223,12 @@ export const getSource = (webmention) => {
 		webmention["url"]
 	);
 };
-export const getWebmentionSource = getSource;
 
 /**
  * @param {Webmention} webmention
  * @returns {string|undefined}
  */
-export const getURL = (webmention) => {
+const getURL = (webmention) => {
 	return (
 		webmention?.["data"]?.["url"] ||
 		webmention["url"] ||
@@ -240,36 +236,33 @@ export const getURL = (webmention) => {
 		webmention["source"]
 	);
 };
-export const getWebmentionURL = getURL;
 
 /**
  * @param {Webmention} webmention
  * @returns {string|undefined}
  */
-export const getTarget = (webmention) => {
+const getTarget = (webmention) => {
 	return webmention["wm-target"] || webmention["target"];
 };
-export const getWebmentionTarget = getTarget;
 
 /**
  * @param {Webmention} webmention
  * @returns {string|undefined}
  */
-export const getType = (webmention) => {
+const getType = (webmention) => {
 	return (
 		webmention["wm-property"] ||
 		webmention?.["activity"]?.["type"] ||
 		webmention["type"]
 	);
 };
-export const getWebmentionType = getType;
 
 /**
  * @param {Webmention[]} webmentions
  * @param {WebmentionType|WebmentionType[]} types
  * @returns {Webmention[]}
  */
-export const getByTypes = (webmentions, types) => {
+const getByTypes = (webmentions, types) => {
 	return webmentions.filter((webmention) => {
 		if (typeof types === "string") {
 			return types === getType(webmention);
@@ -277,16 +270,13 @@ export const getByTypes = (webmentions, types) => {
 		return types.includes(getType(webmention));
 	});
 };
-export const getByType = getByTypes;
-export const getWebmentionsByTypes = getByTypes;
-export const getWebmentionsByType = getByTypes;
 
 /**
  * @param {Webmention[]} webmentions
  * @param {string[]} blocklist
  * @returns {Webmention[]}
  */
-export const processBlocklist = (webmentions, blocklist) => {
+const processBlocklist = (webmentions, blocklist) => {
 	return webmentions.filter((webmention) => {
 		let url = getSource(webmention);
 		let source = getSource(webmention);
@@ -301,15 +291,13 @@ export const processBlocklist = (webmentions, blocklist) => {
 		return true;
 	});
 };
-export const processWebmentionBlocklist = processBlocklist;
-export const processWebmentionsBlocklist = processBlocklist;
 
 /**
  * @param {Webmention[]} webmentions
  * @param {string[]} allowlist
  * @returns {Webmention[]}
  */
-export const processAllowlist = (webmentions, allowlist) => {
+const processAllowlist = (webmentions, allowlist) => {
 	return webmentions.filter((webmention) => {
 		let url = getSource(webmention);
 		let source = getSource(webmention);
@@ -324,8 +312,6 @@ export const processAllowlist = (webmentions, allowlist) => {
 		return false;
 	});
 };
-export const processWebmentionAllowlist = processAllowlist;
-export const processWebmentionsAllowlist = processAllowlist;
 
 /**
  * @param {Options} options
@@ -333,7 +319,7 @@ export const processWebmentionsAllowlist = processAllowlist;
  * @param {string} url
  * @returns {Promise<{found: number, webmentions: Webmention[]}>}
  */
-export const fetchWebmentions = async (options, webmentions, url) => {
+const fetchWebmentions = async (options, webmentions, url) => {
 	return await fetch(url)
 		.then(async (response) => {
 			if (!response.ok) {
@@ -399,7 +385,7 @@ export const fetchWebmentions = async (options, webmentions, url) => {
  * @param {Options} options
  * @returns {Promise<Webmention[]>}
  */
-export const retrieveWebmentions = async (options) => {
+const retrieveWebmentions = async (options) => {
 	if (!options.domain) {
 		throw new Error(
 			"`domain` is a required field when attempting to retrieve Webmentions. See https://www.npmjs.com/package/@chrisburnell/eleventy-cache-webmentions#installation for more information.",
@@ -536,7 +522,7 @@ const WEBMENTIONS = {};
  * @param {Options} options
  * @returns {Promise<Object<string, Webmention[]>>}
  */
-export const webmentionsByURL = async (options) => {
+const webmentionsByURL = async (options) => {
 	if (Object.keys(WEBMENTIONS).length) {
 		return WEBMENTIONS;
 	}
@@ -562,8 +548,6 @@ export const webmentionsByURL = async (options) => {
 
 	return WEBMENTIONS;
 };
-export const webmentionsByUrl = webmentionsByURL;
-export const filteredWebmentions = webmentionsByURL;
 
 /**
  * @param {Options} options
@@ -571,7 +555,7 @@ export const filteredWebmentions = webmentionsByURL;
  * @param {WebmentionType[]|WebmentionType} [types=[]]
  * @returns {Promise<Webmention[]>}
  */
-export const getWebmentions = async (options, url, types = []) => {
+const getWebmentions = async (options, url, types = []) => {
 	const webmentions = await webmentionsByURL(options);
 	url = absoluteURL(url, options.domain);
 
@@ -620,7 +604,7 @@ export const getWebmentions = async (options, url, types = []) => {
  * @param {Object} eleventyConfig
  * @param {Options} [options={}]
  */
-export const eleventyCacheWebmentions = (eleventyConfig, options = {}) => {
+const eleventyCacheWebmentions = (eleventyConfig, options = {}) => {
 	options = Object.assign(defaults, options);
 
 	const byURL = webmentionsByURL(options);
@@ -659,4 +643,35 @@ export const eleventyCacheWebmentions = (eleventyConfig, options = {}) => {
 	eleventyConfig.addNunjucksFilter("getWebmentionType", getType);
 };
 
-export default eleventyCacheWebmentions;
+module.exports = eleventyCacheWebmentions;
+module.exports.defaults = defaults;
+module.exports.getPublished = getPublished;
+module.exports.getWebmentionPublished = getPublished;
+module.exports.getReceived = getReceived;
+module.exports.getWebmentionReceived = getReceived;
+module.exports.getContent = getContent;
+module.exports.getWebmentionContent = getContent;
+module.exports.getSource = getSource;
+module.exports.getWebmentionSource = getSource;
+module.exports.getURL = getURL;
+module.exports.getWebmentionURL = getURL;
+module.exports.getTarget = getTarget;
+module.exports.getWebmentionTarget = getTarget;
+module.exports.getType = getType;
+module.exports.getWebmentionType = getType;
+module.exports.getByTypes = getByTypes;
+module.exports.getByType = getByTypes;
+module.exports.getWebmentionsByTypes = getByTypes;
+module.exports.getWebmentionsByType = getByTypes;
+module.exports.processBlocklist = processBlocklist;
+module.exports.processWebmentionBlocklist = processBlocklist;
+module.exports.processWebmentionsBlocklist = processBlocklist;
+module.exports.processAllowlist = processAllowlist;
+module.exports.processWebmentionAllowlist = processAllowlist;
+module.exports.processWebmentionsAllowlist = processAllowlist;
+module.exports.fetchWebmentions = fetchWebmentions;
+module.exports.retrieveWebmentions = retrieveWebmentions;
+module.exports.webmentionsByURL = webmentionsByURL;
+module.exports.webmentionsByUrl = webmentionsByURL;
+module.exports.filteredWebmentions = webmentionsByURL;
+module.exports.getWebmentions = getWebmentions;
