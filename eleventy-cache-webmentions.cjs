@@ -7,24 +7,24 @@ const sanitizeHTML = require("sanitize-html");
  */
 
 /**
- * @typedef {Object} OptionsDefaults
- * @prop {boolean} refresh
- * @prop {string} duration
- * @prop {string} uniqueKey
- * @prop {string} [cacheDirectory]
- * @prop {AllowedHTML} allowedHTML
- * @prop {string[]} allowlist
- * @prop {string[]} blocklist
- * @prop {Object<string, string>} urlReplacements
- * @prop {number} maximumHtmlLength
- * @prop {string} maximumHtmlText
+ * @typedef {object} OptionsDefaults
+ * @property {boolean} refresh
+ * @property {string} duration
+ * @property {string} uniqueKey
+ * @property {string} [cacheDirectory]
+ * @property {AllowedHTML} allowedHTML
+ * @property {string[]} allowlist
+ * @property {string[]} blocklist
+ * @property {{ string: string }} urlReplacements
+ * @property {number} maximumHtmlLength
+ * @property {string} maximumHtmlText
  */
 
 /**
- * @typedef {Object} OptionsUserInput
- * @prop {string} domain
- * @prop {string} feed
- * @prop {string} key
+ * @typedef {object} OptionsUserInput
+ * @property {string} domain
+ * @property {string} feed
+ * @property {string} key
  */
 
 /**
@@ -32,29 +32,29 @@ const sanitizeHTML = require("sanitize-html");
  */
 
 /**
- * @typedef {Object} Webmention
- * @prop {string} [source]
- * @prop {string} [url]
- * @prop {string} [target]
- * @prop {string} [published]
- * @prop {string} [contentSanitized]
- * @prop {Object} [content]
- * @prop {string} [content.html]
- * @prop {string} [content.value]
- * @prop {Object} [data]
- * @prop {string} [data.title]
- * @prop {string} [data.url]
- * @prop {string} [data.published]
- * @prop {string} [data.content]
- * @prop {string} [type]
- * @prop {Object} [activity]
- * @prop {string} [activity.type]
- * @prop {boolean} [verified]
- * @prop {string} ["wm-property"]
- * @prop {string} ["wm-received"]
- * @prop {string} ["wm-source"]
- * @prop {string} ["wm-target"]
- * @prop {string} ["verified_date"]
+ * @typedef {object} Webmention
+ * @property {string} [source]
+ * @property {string} [url]
+ * @property {string} [target]
+ * @property {string} [published]
+ * @property {string} [contentSanitized]
+ * @property {object} [content]
+ * @property {string} [content.html]
+ * @property {string} [content.value]
+ * @property {object} [data]
+ * @property {string} [data.title]
+ * @property {string} [data.url]
+ * @property {string} [data.published]
+ * @property {string} [data.content]
+ * @property {string} [type]
+ * @property {object} [activity]
+ * @property {string} [activity.type]
+ * @property {boolean} [verified]
+ * @property {string} ["wm-property"]
+ * @property {string} ["wm-received"]
+ * @property {string} ["wm-source"]
+ * @property {string} ["wm-target"]
+ * @property {string} ["verified_date"]
  */
 
 /**
@@ -90,7 +90,7 @@ const defaults = {
 const absoluteURL = (url, domain) => {
 	try {
 		return new URL(url, domain).toString();
-	} catch (e) {
+	} catch (error) {
 		console.error(
 			`Trying to convert ${styleText(
 				"bold",
@@ -99,6 +99,7 @@ const absoluteURL = (url, domain) => {
 				"bold",
 				domain,
 			)} and failed.`,
+			error,
 		);
 		return url;
 	}
@@ -116,7 +117,7 @@ const baseURL = (url) => {
 
 /**
  * @param {string} url
- * @param {Object<string, string>} [urlReplacements]
+ * @param {{ string: string }} [urlReplacements]
  * @returns {string}
  */
 const fixURL = (url, urlReplacements) => {
@@ -520,7 +521,7 @@ const WEBMENTIONS = {};
 
 /**
  * @param {Options} options
- * @returns {Promise<Object<string, Webmention[]>>}
+ * @returns {Promise<{ string: Webmention[] }>}
  */
 const webmentionsByURL = async (options) => {
 	if (Object.keys(WEBMENTIONS).length) {
@@ -601,13 +602,13 @@ const getWebmentions = async (options, url, types = []) => {
 };
 
 /**
- * @param {Object} eleventyConfig
+ * @param {object} eleventyConfig
  * @param {Options} [options={}]
  */
-const eleventyCacheWebmentions = (eleventyConfig, options = {}) => {
+const eleventyCacheWebmentions = async (eleventyConfig, options = {}) => {
 	options = Object.assign(defaults, options);
 
-	const byURL = webmentionsByURL(options);
+	const byURL = await webmentionsByURL(options);
 	const all = Object.values(byURL).reduce(
 		(array, webmentions) => [...array, ...webmentions],
 		[],
