@@ -13,9 +13,9 @@ const sanitizeHTML = require("sanitize-html");
  * @property {string} uniqueKey
  * @property {string} [cacheDirectory]
  * @property {AllowedHTML} allowedHTML
- * @property {string[]} allowlist
- * @property {string[]} blocklist
- * @property {{ string: string }} urlReplacements
+ * @property {Array<string>} allowlist
+ * @property {Array<string>} blocklist
+ * @property {{[key: string], string}} urlReplacements
  * @property {number} maximumHtmlLength
  * @property {string} maximumHtmlText
  */
@@ -117,7 +117,7 @@ const baseURL = (url) => {
 
 /**
  * @param {string} url
- * @param {{ string: string }} [urlReplacements]
+ * @param {{[key: string], string}} [urlReplacements]
  * @returns {string}
  */
 const fixURL = (url, urlReplacements) => {
@@ -151,8 +151,8 @@ const epoch = (date) => {
 };
 
 /**
- * @param {Webmention[]} webmentions
- * @returns {Webmention[]}
+ * @param {Array<Webmention>} webmentions
+ * @returns {Array<Webmention>}
  */
 const removeDuplicates = (webmentions) => {
 	return [
@@ -259,9 +259,9 @@ const getType = (webmention) => {
 };
 
 /**
- * @param {Webmention[]} webmentions
- * @param {WebmentionType|WebmentionType[]} types
- * @returns {Webmention[]}
+ * @param {Array<Webmention>} webmentions
+ * @param {WebmentionType|Array<WebmentionType>} types
+ * @returns {Array<Webmention>}
  */
 const getByTypes = (webmentions, types) => {
 	return webmentions.filter((webmention) => {
@@ -273,9 +273,9 @@ const getByTypes = (webmentions, types) => {
 };
 
 /**
- * @param {Webmention[]} webmentions
- * @param {string[]} blocklist
- * @returns {Webmention[]}
+ * @param {Array<Webmention>} webmentions
+ * @param {Array<string>} blocklist
+ * @returns {Array<Webmention>}
  */
 const processBlocklist = (webmentions, blocklist) => {
 	return webmentions.filter((webmention) => {
@@ -294,9 +294,9 @@ const processBlocklist = (webmentions, blocklist) => {
 };
 
 /**
- * @param {Webmention[]} webmentions
- * @param {string[]} allowlist
- * @returns {Webmention[]}
+ * @param {Array<Webmention>} webmentions
+ * @param {Array<string>} allowlist
+ * @returns {Array<Webmention>}
  */
 const processAllowlist = (webmentions, allowlist) => {
 	return webmentions.filter((webmention) => {
@@ -316,9 +316,9 @@ const processAllowlist = (webmentions, allowlist) => {
 
 /**
  * @param {Options} options
- * @param {Webmention[]} webmentions
+ * @param {Array<Webmention>} webmentions
  * @param {string} url
- * @returns {Promise<{found: number, webmentions: Webmention[]}>}
+ * @returns {Promise<{found: number, webmentions: Array<Webmention>}>}
  */
 const fetchWebmentions = async (options, webmentions, url) => {
 	return await fetch(url)
@@ -384,7 +384,7 @@ const fetchWebmentions = async (options, webmentions, url) => {
 
 /**
  * @param {Options} options
- * @returns {Promise<Webmention[]>}
+ * @returns {Promise<Array<Webmention>>}
  */
 const retrieveWebmentions = async (options) => {
 	if (!options.domain) {
@@ -516,12 +516,12 @@ const retrieveWebmentions = async (options) => {
 	return webmentions;
 };
 
-/** @type {Webmention[]} */
+/** @type {Array<Webmention>} */
 const WEBMENTIONS = {};
 
 /**
  * @param {Options} options
- * @returns {Promise<{ string: Webmention[] }>}
+ * @returns {Promise<{[key: string], Array<Webmention>}>}
  */
 const webmentionsByURL = async (options) => {
 	if (Object.keys(WEBMENTIONS).length) {
@@ -553,8 +553,8 @@ const webmentionsByURL = async (options) => {
 /**
  * @param {Options} options
  * @param {string} url
- * @param {WebmentionType[]|WebmentionType} [types=[]]
- * @returns {Promise<Webmention[]>}
+ * @param {WebmentionType|Array<WebmentionType>} [types]
+ * @returns {Promise<Array<Webmention>>}
  */
 const getWebmentions = async (options, url, types = []) => {
 	const webmentions = await webmentionsByURL(options);
@@ -603,7 +603,7 @@ const getWebmentions = async (options, url, types = []) => {
 
 /**
  * @param {object} eleventyConfig
- * @param {Options} [options={}]
+ * @param {Options} [options]
  */
 const eleventyCacheWebmentions = async (eleventyConfig, options = {}) => {
 	options = Object.assign(defaults, options);

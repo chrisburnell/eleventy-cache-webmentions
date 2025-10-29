@@ -13,9 +13,9 @@ import sanitizeHTML from "sanitize-html";
  * @property {string} uniqueKey
  * @property {string} [cacheDirectory]
  * @property {AllowedHTML} allowedHTML
- * @property {string[]} allowlist
- * @property {string[]} blocklist
- * @property {{ string: string }} urlReplacements
+ * @property {Array<string>} allowlist
+ * @property {Array<string>} blocklist
+ * @property {{[key: string], string}} urlReplacements
  * @property {number} maximumHtmlLength
  * @property {string} maximumHtmlText
  */
@@ -117,7 +117,7 @@ const baseURL = (url) => {
 
 /**
  * @param {string} url
- * @param {{ string: string }} [urlReplacements]
+ * @param {{[key: string], string}} [urlReplacements]
  * @returns {string}
  */
 const fixURL = (url, urlReplacements) => {
@@ -151,8 +151,8 @@ const epoch = (date) => {
 };
 
 /**
- * @param {Webmention[]} webmentions
- * @returns {Webmention[]}
+ * @param {Array<Webmention>} webmentions
+ * @returns {Array<Webmention>}
  */
 const removeDuplicates = (webmentions) => {
 	return [
@@ -266,9 +266,9 @@ export const getType = (webmention) => {
 export const getWebmentionType = getType;
 
 /**
- * @param {Webmention[]} webmentions
- * @param {WebmentionType|WebmentionType[]} types
- * @returns {Webmention[]}
+ * @param {Array<Webmention>} webmentions
+ * @param {WebmentionType|Array<WebmentionType>} types
+ * @returns {Array<Webmention>}
  */
 export const getByTypes = (webmentions, types) => {
 	return webmentions.filter((webmention) => {
@@ -283,9 +283,9 @@ export const getWebmentionsByTypes = getByTypes;
 export const getWebmentionsByType = getByTypes;
 
 /**
- * @param {Webmention[]} webmentions
- * @param {string[]} blocklist
- * @returns {Webmention[]}
+ * @param {Array<Webmention>} webmentions
+ * @param {Array<string>} blocklist
+ * @returns {Array<Webmention>}
  */
 export const processBlocklist = (webmentions, blocklist) => {
 	return webmentions.filter((webmention) => {
@@ -306,9 +306,9 @@ export const processWebmentionBlocklist = processBlocklist;
 export const processWebmentionsBlocklist = processBlocklist;
 
 /**
- * @param {Webmention[]} webmentions
- * @param {string[]} allowlist
- * @returns {Webmention[]}
+ * @param {Array<Webmention>} webmentions
+ * @param {Array<string>} allowlist
+ * @returns {Array<Webmention>}
  */
 export const processAllowlist = (webmentions, allowlist) => {
 	return webmentions.filter((webmention) => {
@@ -330,9 +330,9 @@ export const processWebmentionsAllowlist = processAllowlist;
 
 /**
  * @param {Options} options
- * @param {Webmention[]} webmentions
+ * @param {Array<Webmention>} webmentions
  * @param {string} url
- * @returns {Promise<{found: number, webmentions: Webmention[]}>}
+ * @returns {Promise<{found: number, webmentions: Array<Webmention>}>}
  */
 export const fetchWebmentions = async (options, webmentions, url) => {
 	return await fetch(url)
@@ -398,7 +398,7 @@ export const fetchWebmentions = async (options, webmentions, url) => {
 
 /**
  * @param {Options} options
- * @returns {Promise<Webmention[]>}
+ * @returns {Promise<Array<Webmention>>}
  */
 export const retrieveWebmentions = async (options) => {
 	if (!options.domain) {
@@ -530,12 +530,12 @@ export const retrieveWebmentions = async (options) => {
 	return webmentions;
 };
 
-/** @type {Webmention[]} */
+/** @type {Array<Webmention>} */
 const WEBMENTIONS = {};
 
 /**
  * @param {Options} options
- * @returns {Promise<{ string: Webmention[] }>}
+ * @returns {Promise<{[key: string], Array<Webmention>}>}
  */
 export const webmentionsByURL = async (options) => {
 	if (Object.keys(WEBMENTIONS).length) {
@@ -569,8 +569,8 @@ export const filteredWebmentions = webmentionsByURL;
 /**
  * @param {Options} options
  * @param {string} url
- * @param {WebmentionType[]|WebmentionType} [types=[]]
- * @returns {Promise<Webmention[]>}
+ * @param {WebmentionType|Array<WebmentionType>} [types]
+ * @returns {Promise<Array<Webmention>>}
  */
 export const getWebmentions = async (options, url, types = []) => {
 	const webmentions = await webmentionsByURL(options);
@@ -619,7 +619,7 @@ export const getWebmentions = async (options, url, types = []) => {
 
 /**
  * @param {object} eleventyConfig
- * @param {Options} [options={}]
+ * @param {Options} [options]
  */
 export const eleventyCacheWebmentions = async (
 	eleventyConfig,
