@@ -15,10 +15,27 @@ import sanitizeHTML from "sanitize-html";
  * @property {AllowedHTML} allowedHTML
  * @property {Array<string>} allowlist
  * @property {Array<string>} blocklist
- * @property {{[key: string], string}} urlReplacements
+ * @property {{[key: string]: string}} urlReplacements
  * @property {number} maximumHtmlLength
  * @property {string} maximumHtmlText
  */
+export const defaults = {
+	refresh: false,
+	duration: "1d",
+	uniqueKey: "webmentions",
+	cacheDirectory: undefined,
+	allowedHTML: {
+		allowedTags: ["a", "b", "em", "i", "strong"],
+		allowedAttributes: {
+			a: ["href"],
+		},
+	},
+	allowlist: [],
+	blocklist: [],
+	urlReplacements: {},
+	maximumHtmlLength: 1000,
+	maximumHtmlText: "mentioned this in",
+};
 
 /**
  * @typedef {object} OptionsUserInput
@@ -62,27 +79,6 @@ import sanitizeHTML from "sanitize-html";
  */
 
 /**
- * @type {OptionsDefaults}
- */
-export const defaults = {
-	refresh: false,
-	duration: "1d",
-	uniqueKey: "webmentions",
-	cacheDirectory: undefined,
-	allowedHTML: {
-		allowedTags: ["a", "b", "em", "i", "strong"],
-		allowedAttributes: {
-			a: ["href"],
-		},
-	},
-	allowlist: [],
-	blocklist: [],
-	urlReplacements: {},
-	maximumHtmlLength: 1000,
-	maximumHtmlText: "mentioned this in",
-};
-
-/**
  * @param {string} url
  * @param {string} domain
  * @returns {string}
@@ -117,7 +113,7 @@ const baseURL = (url) => {
 
 /**
  * @param {string} url
- * @param {{[key: string], string}} [urlReplacements]
+ * @param {{[key: string]: string}} [urlReplacements]
  * @returns {string}
  */
 const fixURL = (url, urlReplacements) => {
@@ -535,7 +531,7 @@ const WEBMENTIONS = {};
 
 /**
  * @param {Options} options
- * @returns {Promise<{[key: string], Array<Webmention>}>}
+ * @returns {Promise<{[key: string]: Array<Webmention>}>}
  */
 export const webmentionsByURL = async (options) => {
 	if (Object.keys(WEBMENTIONS).length) {

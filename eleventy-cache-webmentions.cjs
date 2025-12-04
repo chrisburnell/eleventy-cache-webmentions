@@ -15,10 +15,27 @@ const sanitizeHTML = require("sanitize-html");
  * @property {AllowedHTML} allowedHTML
  * @property {Array<string>} allowlist
  * @property {Array<string>} blocklist
- * @property {{[key: string], string}} urlReplacements
+ * @property {{[key: string]: string}} urlReplacements
  * @property {number} maximumHtmlLength
  * @property {string} maximumHtmlText
  */
+const defaults = {
+	refresh: false,
+	duration: "1d",
+	uniqueKey: "webmentions",
+	cacheDirectory: undefined,
+	allowedHTML: {
+		allowedTags: ["a", "b", "em", "i", "strong"],
+		allowedAttributes: {
+			a: ["href"],
+		},
+	},
+	allowlist: [],
+	blocklist: [],
+	urlReplacements: {},
+	maximumHtmlLength: 1000,
+	maximumHtmlText: "mentioned this in",
+};
 
 /**
  * @typedef {object} OptionsUserInput
@@ -60,27 +77,6 @@ const sanitizeHTML = require("sanitize-html");
 /**
  * @typedef {"bookmark-of"|"like-of"|"repost-of"|"mention-of"|"in-reply-to"} WebmentionType
  */
-
-/**
- * @type {OptionsDefaults}
- */
-const defaults = {
-	refresh: false,
-	duration: "1d",
-	uniqueKey: "webmentions",
-	cacheDirectory: undefined,
-	allowedHTML: {
-		allowedTags: ["a", "b", "em", "i", "strong"],
-		allowedAttributes: {
-			a: ["href"],
-		},
-	},
-	allowlist: [],
-	blocklist: [],
-	urlReplacements: {},
-	maximumHtmlLength: 1000,
-	maximumHtmlText: "mentioned this in",
-};
 
 /**
  * @param {string} url
@@ -521,7 +517,7 @@ const WEBMENTIONS = {};
 
 /**
  * @param {Options} options
- * @returns {Promise<{[key: string], Array<Webmention>}>}
+ * @returns {Promise<{[key: string]: Array<Webmention>}>}
  */
 const webmentionsByURL = async (options) => {
 	if (Object.keys(WEBMENTIONS).length) {
