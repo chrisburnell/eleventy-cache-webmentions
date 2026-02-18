@@ -337,9 +337,17 @@ const fetchWebmentions = async (options, webmentions, url) => {
 				return Promise.reject(response);
 			}
 
-			// Combine newly-fetched Webmentions with cached Webmentions
-			webmentions = feed[options.key].concat(webmentions);
-			// Remove duplicates by source URL
+			// Fetched Webmentions replace cached ones with the same source URL
+			const fetchedSources = new Set(
+				feed[options.key].map((wm) => getSource(wm)),
+			);
+			webmentions = [
+				...feed[options.key],
+				...webmentions.filter(
+					(wm) => !fetchedSources.has(getSource(wm)),
+				),
+			];
+			// Remove any remaining duplicates by source URL
 			webmentions = removeDuplicates(webmentions);
 			// Process the blocklist, if it has any entries
 			if (options.blocklist.length) {
@@ -567,8 +575,8 @@ const getWebmentions = async (options, url, types = []) => {
 				return typeof types === "object" && Object.keys(types).length
 					? types.includes(getType(entry))
 					: typeof types === "string"
-					? types === getType(entry)
-					: true;
+						? types === getType(entry)
+						: true;
 			})
 			// Sanitize content of webmentions against HTML limit
 			.map((entry) => {
