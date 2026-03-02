@@ -327,7 +327,7 @@ const fetchWebmentions = async (options, webmentions, url) => {
 
 			if (!(options.key in feed)) {
 				console.log(
-					`${styleText("grey", `[${hostname(options.domain)}]`)} ${
+					`${styleText("gray", `[${hostname(options.domain)}]`)} ${
 						options.key
 					} was not found as a key in the response from ${styleText(
 						"bold",
@@ -370,7 +370,7 @@ const fetchWebmentions = async (options, webmentions, url) => {
 		.catch((error) => {
 			console.warn(
 				`${styleText(
-					"grey",
+					"gray",
 					`[${hostname(options.domain)}]`,
 				)} Something went wrong with your Webmention request to ${styleText(
 					"bold",
@@ -503,7 +503,7 @@ const retrieveWebmentions = async (options) => {
 		if (webmentionsCachedLength < webmentions.length) {
 			console.log(
 				`${styleText(
-					"grey",
+					"gray",
 					`[${hostname(options.domain)}]`,
 				)} ${styleText(
 					"bold",
