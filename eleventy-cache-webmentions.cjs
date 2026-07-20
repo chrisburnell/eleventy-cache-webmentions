@@ -157,7 +157,7 @@ const removeDuplicates = (webmentions) => {
 				const key =
 					webmention === null || webmention === undefined
 						? webmention
-						: getSource(webmention);
+						: getUniqueKey(webmention);
 				if (!map.has(key)) {
 					map.set(key, webmention);
 				}
@@ -240,6 +240,14 @@ const getURL = (webmention) => {
  */
 const getTarget = (webmention) => {
 	return webmention["wm-target"] || webmention["target"];
+};
+
+/**
+ * @param {Webmention} webmention
+ * @returns {string}
+ */
+const getUniqueKey = (webmention) => {
+	return JSON.stringify([getSource(webmention), getTarget(webmention)]);
 };
 
 /**
@@ -337,17 +345,18 @@ const fetchWebmentions = async (options, webmentions, url) => {
 				return Promise.reject(response);
 			}
 
-			// Fetched Webmentions replace cached ones with the same source URL
-			const fetchedSources = new Set(
-				feed[options.key].map((wm) => getSource(wm)),
+			// Fetched Webmentions replace cached ones with the same
+			// source / target pair
+			const fetchedKeys = new Set(
+				feed[options.key].map(getUniqueKey),
 			);
 			webmentions = [
 				...feed[options.key],
 				...webmentions.filter(
-					(wm) => !fetchedSources.has(getSource(wm)),
+					(wm) => !fetchedKeys.has(getUniqueKey(wm)),
 				),
 			];
-			// Remove any remaining duplicates by source URL
+			// Remove any remaining duplicates by source / target pair
 			webmentions = removeDuplicates(webmentions);
 			// Process the blocklist, if it has any entries
 			if (options.blocklist.length) {
@@ -662,6 +671,8 @@ module.exports.getURL = getURL;
 module.exports.getWebmentionURL = getURL;
 module.exports.getTarget = getTarget;
 module.exports.getWebmentionTarget = getTarget;
+module.exports.getUniqueKey = getUniqueKey;
+module.exports.getWebmentionUniqueKey = getUniqueKey;
 module.exports.getType = getType;
 module.exports.getWebmentionType = getType;
 module.exports.getByTypes = getByTypes;
