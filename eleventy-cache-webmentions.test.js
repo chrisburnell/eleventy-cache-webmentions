@@ -1,6 +1,5 @@
-import nock from "nock";
 import assert from "node:assert/strict";
-import { describe, it } from "node:test";
+import { after, before, describe, it, mock } from "node:test";
 import {
 	defaults,
 	fetchWebmentions,
@@ -105,10 +104,23 @@ const mentions = {
 	],
 };
 
+before(() => {
+	mock.method(
+		globalThis,
+		"fetch",
+		async () =>
+			new Response(JSON.stringify(mentions), {
+				status: 200,
+				headers: { "content-type": "application/json" },
+			}),
+	);
+});
+
+after(() => {
+	mock.restoreAll();
+});
+
 describe("filteredWebmentions()", () => {
-	const scope = nock("https://example.com")
-		.get("/mentions.json")
-		.reply(200, mentions);
 	it("Should return an object of Key: URL, Value: Array of Webmentions", async () => {
 		const webmentions = await filteredWebmentions(options);
 		assert.strictEqual(Object.keys(webmentions).length, 2);
@@ -116,9 +128,6 @@ describe("filteredWebmentions()", () => {
 });
 
 describe("fetchWebmentions()", () => {
-	const scope = nock("https://example.com")
-		.get("/mentions.json")
-		.reply(200, mentions);
 	it("Should return an object of Key: URL, Value: Array of Webmentions`", async () => {
 		const fetched = await fetchWebmentions(
 			options,
@@ -130,9 +139,6 @@ describe("fetchWebmentions()", () => {
 });
 
 describe("getWebmentions()", () => {
-	const scope = nock("https://example.com")
-		.get("/mentions.json")
-		.reply(200, mentions);
 	it("Should return an object of Key: URL, Value: Array of Webmentions`", async () => {
 		const fetched = await getWebmentions(
 			options,

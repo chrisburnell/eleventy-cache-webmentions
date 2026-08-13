@@ -2,8 +2,6 @@
 
 > Cache webmentions using eleventy-fetch and make them available to use in collections, layouts, pages, etc. in Eleventy.
 
-[![Deploy](https://img.shields.io/github/actions/workflow/status/chrisburnell/eleventy-cache-webmentions/npm-publish.yml?logo=github)](https://github.com/chrisburnell/eleventy-cache-webmentions/actions/workflows/npm-publish.yml)  ​ [![NPM Downloads](https://img.shields.io/npm/dm/%40chrisburnell%2Feleventy-cache-webmentions?logo=npm&color=%235f8aa6)](https://www.npmjs.com/package/@chrisburnell/eleventy-cache-webmentions)
-
 ## Breaking change for v2.0.0
 
 Version 2.0.0 introduces a breaking change for those migrating from earlier versions of the plugin. This affects usage of the plugin from JavaScript files; specifically, you will need to make a small change to the way that you `require()` the plugin by removing an extra set of parentheses:
@@ -81,7 +79,7 @@ Make sure you get the correct values for this configuration. Check below for bot
             <td>0.0.1</td>
         </tr>
         <tr>
-            <td><code>directory</code></td>
+            <td><code>cacheDirectory</code></td>
             <td><code>".cache"</code></td>
             <td>See <a href="https://www.11ty.dev/docs/plugins/cache/#cache-directory">Eleventy Fetch’s Cache Directory</a> for more information.</td>
             <td>1.1.2</td>
@@ -130,7 +128,7 @@ Make sure you get the correct values for this configuration. Check below for bot
         </tr>
         <tr>
             <td><code>maximumHtmlLength</code></td>
-            <td><code>2000</code></td>
+            <td><code>1000</code></td>
             <td>Maximum number of characters in a Webmention’s HTML content, beyond which point a different message is shown, referring to the original source.</td>
             <td>0.0.1</td>
         </tr>
@@ -139,6 +137,12 @@ Make sure you get the correct values for this configuration. Check below for bot
             <td><code>"mentioned this in"</code></td>
             <td>The glue-y part of the message displayed when a Webmention content’s character count exceeds <code>maximumHtmlLength</code>.</td>
             <td>0.1.0</td>
+        </tr>
+        <tr>
+            <td><code>paginate</code></td>
+            <td><code>false</code></td>
+            <td>Loops through pages of results until none are found for Webmention servers that paginate their feeds (as <a href="#webmentionio">Webmention.io</a> does). Automatically enabled when the <code>feed</code> points at a <code>https://webmention.io</code> URL. Set this to <code>true</code> to also enable it for self-hosted <em>Webmention.io</em> instances running on a different domain.</td>
+            <td>2.3.3</td>
         </tr>
     </tbody>
 </table>
@@ -343,6 +347,23 @@ module.exports = function(eleventyConfig) {
 ```
 
 If you want to use the JSON format instead, make sure that you replace `mentions.jf2` in the URL with `mentions.json` and change the value of the key from `children` to `links`.
+
+#### Self-hosting Webmention.io
+
+Pagination through the feed (see the `paginate` option above) is automatically enabled whenever `feed` points at `https://webmention.io`. If you're instead running your own self-hosted instance of the [open-source Webmention.io software](https://github.com/aaronpk/webmention.io) on a different domain, add `paginate: true` explicitly so the plugin still loops through pages of results:
+
+```javascript
+const pluginWebmentions = require("@chrisburnell/eleventy-cache-webmentions")
+
+module.exports = function(eleventyConfig) {
+	eleventyConfig.addPlugin(pluginWebmentions, {
+		domain: "https://example.com",
+		feed: `https://webmentions.example.com/api/mentions.jf2?domain=example.com&token=${process.env.WEBMENTION_IO_TOKEN}`,
+		key: "children",
+		paginate: true
+	})
+}
+```
 
 ## go-jamming
 

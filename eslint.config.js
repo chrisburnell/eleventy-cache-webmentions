@@ -5,7 +5,7 @@ import globals from "globals";
 export default [
 	js.configs.recommended,
 	{
-		files: ["**/*.js"],
+		files: ["**/*.js", "**/*.cjs"],
 		plugins: { jsdoc },
 		languageOptions: {
 			ecmaVersion: "latest",

@@ -2,7 +2,7 @@
 .gitattributes
 .vscode
 .editorconfig
-.eslintrc.json
 .prettierrc
 .prettierignore
 eleventy-cache-webmentions.test.js
+eslint.config.js
