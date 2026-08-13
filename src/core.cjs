@@ -16,6 +16,7 @@
  * @property {{[key: string]: string}} urlReplacements
  * @property {number} maximumHtmlLength
  * @property {string} maximumHtmlText
+ * @property {boolean} paginate
  */
 
 /**
@@ -74,7 +75,6 @@ module.exports = ({ AssetCache, styleText, sanitizeHTML }) => {
 		refresh: false,
 		duration: "1d",
 		uniqueKey: "webmentions",
-		cacheDirectory: undefined,
 		allowedHTML: {
 			allowedTags: ["a", "b", "em", "i", "strong"],
 			allowedAttributes: {
@@ -86,6 +86,7 @@ module.exports = ({ AssetCache, styleText, sanitizeHTML }) => {
 		urlReplacements: {},
 		maximumHtmlLength: 1000,
 		maximumHtmlText: "mentioned this in",
+		paginate: false,
 	};
 
 	/**
@@ -542,34 +543,52 @@ module.exports = ({ AssetCache, styleText, sanitizeHTML }) => {
 		return webmentions;
 	};
 
+	const webmentionsByURLCache = new Map();
+
 	/**
 	 * @param {Options} options
 	 * @returns {Promise<{[key: string]: Array<Webmention>}>}
 	 */
 	const webmentionsByURL = async (options) => {
-		let rawWebmentions = await retrieveWebmentions(options);
+		const cacheKey = JSON.stringify([
+			options.domain,
+			options.feed,
+			options.key,
+			options.uniqueKey,
+			options.refresh,
+		]);
 
-		// Fix local URLs based on urlReplacements and sort Webmentions into groups
-		// by target base URL
-		const webmentions = {};
-		rawWebmentions.forEach((webmention) => {
-			const target = getTarget(webmention);
-			if (!target) {
-				return;
-			}
+		if (webmentionsByURLCache.has(cacheKey)) {
+			return webmentionsByURLCache.get(cacheKey);
+		}
 
-			let url = baseURL(
-				fixURL(target.replace(/\/?$/, "/"), options.urlReplacements),
-			);
+		const promise = retrieveWebmentions(options).then((rawWebmentions) => {
+			// Fix local URLs based on urlReplacements and sort Webmentions into
+			// groups by target base URL
+			const webmentions = {};
+			rawWebmentions.forEach((webmention) => {
+				const target = getTarget(webmention);
+				if (!target) {
+					return;
+				}
 
-			if (!webmentions[url]) {
-				webmentions[url] = [];
-			}
+				let url = baseURL(
+					fixURL(target.replace(/\/?$/, "/"), options.urlReplacements),
+				);
 
-			webmentions[url].push(webmention);
+				if (!webmentions[url]) {
+					webmentions[url] = [];
+				}
+
+				webmentions[url].push(webmention);
+			});
+
+			return webmentions;
 		});
 
-		return webmentions;
+		webmentionsByURLCache.set(cacheKey, promise);
+
+		return promise;
 	};
 	const webmentionsByUrl = webmentionsByURL;
 	const filteredWebmentions = webmentionsByURL;
