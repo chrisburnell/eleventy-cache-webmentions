@@ -246,11 +246,29 @@ describe("getContent()", () => {
 		assert.strictEqual(getContent(webmention), "Lorem ipsum");
 	});
 
+	it("Should return content from `content.text`", async () => {
+		const webmention = {
+			content: {
+				text: "Lorem ipsum",
+			},
+		};
+		assert.strictEqual(getContent(webmention), "Lorem ipsum");
+	});
+
 	it("Should return content from `content`", async () => {
 		const webmention = {
 			content: "Lorem ipsum",
 		};
 		assert.strictEqual(getContent(webmention), "Lorem ipsum");
+	});
+
+	it("Should return an empty string for an unrecognized `content` shape rather than the raw object", async () => {
+		const webmention = {
+			content: {
+				unrecognizedKey: "Lorem ipsum",
+			},
+		};
+		assert.strictEqual(getContent(webmention), "");
 	});
 
 	it("Should return content from `data.content`", async () => {

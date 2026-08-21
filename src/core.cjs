@@ -40,6 +40,7 @@
  * @property {object} [content]
  * @property {string} [content.html]
  * @property {string} [content.value]
+ * @property {string} [content.text]
  * @property {object} [data]
  * @property {string} [data.title]
  * @property {string} [data.url]
@@ -212,7 +213,8 @@ module.exports = ({ AssetCache, styleText, sanitizeHTML }) => {
 			webmention?.["contentSanitized"] ||
 			webmention?.["content"]?.["html"] ||
 			webmention?.["content"]?.["value"] ||
-			webmention?.["content"] ||
+			webmention?.["content"]?.["text"] ||
+			(typeof webmention?.["content"] === "string" && webmention["content"]) ||
 			webmention?.["data"]?.["content"] ||
 			""
 		);
